@@ -243,21 +243,34 @@ const createTables = () => {
 };
 
 // Database utility functions
+const mapResultToObjects = (execResult) => {
+  if (!execResult || execResult.length === 0) return [];
+  const colNames = execResult[0].columns;
+  return execResult[0].values.map(row => {
+    const obj = {};
+    colNames.forEach((col, idx) => { obj[col] = row[idx]; });
+    return obj;
+  });
+};
+
 const dbUtils = {
   // User operations
   getUserById: (id) => {
-    const result = db.exec('SELECT id, username, email, role, first_name, last_name, company, created_at, is_active FROM users WHERE id = ?', [id]);
-    return result.length > 0 ? result[0].values[0] : null;
+    const result = db.exec('SELECT id, username, email, password, role, first_name, last_name, company, created_at, is_active FROM users WHERE id = ?', [id]);
+    const objects = mapResultToObjects(result);
+    return objects.length > 0 ? objects[0] : null;
   },
   
   getUserByUsername: (username) => {
     const result = db.exec('SELECT * FROM users WHERE username = ?', [username]);
-    return result.length > 0 ? result[0].values[0] : null;
+    const objects = mapResultToObjects(result);
+    return objects.length > 0 ? objects[0] : null;
   },
 
   getUserByEmail: (email) => {
     const result = db.exec('SELECT * FROM users WHERE email = ?', [email]);
-    return result.length > 0 ? result[0].values[0] : null;
+    const objects = mapResultToObjects(result);
+    return objects.length > 0 ? objects[0] : null;
   },
 
   createUser: (username, email, password, role, first_name, last_name, company) => {
@@ -266,6 +279,8 @@ const dbUtils = {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [username, email, password, role, first_name, last_name, company]);
     saveDatabase();
+    const res = db.exec('SELECT last_insert_rowid() as id');
+    return { lastInsertRowid: res[0].values[0][0] };
   },
 
   updateUser: (id, first_name, last_name, company) => {
@@ -286,29 +301,30 @@ const dbUtils = {
 
   getAllUsers: () => {
     const result = db.exec('SELECT id, username, email, role, first_name, last_name, company, created_at, is_active FROM users ORDER BY created_at DESC');
-    return result.length > 0 ? result[0].values : [];
+    return mapResultToObjects(result);
   },
 
   // CVE operations
   getAllCVEs: () => {
     const result = db.exec('SELECT * FROM cves ORDER BY published_date DESC');
-    return result.length > 0 ? result[0].values : [];
+    return mapResultToObjects(result);
   },
 
   getCVEById: (cve_id) => {
     const result = db.exec('SELECT * FROM cves WHERE cve_id = ?', [cve_id]);
-    return result.length > 0 ? result[0].values[0] : null;
+    const objects = mapResultToObjects(result);
+    return objects.length > 0 ? objects[0] : null;
   },
 
   getCVEsBySeverity: (severity) => {
     const result = db.exec('SELECT * FROM cves WHERE severity = ? ORDER BY published_date DESC', [severity]);
-    return result.length > 0 ? result[0].values : [];
+    return mapResultToObjects(result);
   },
 
   searchCVEs: (query) => {
     const searchTerm = `%${query}%`;
     const result = db.exec('SELECT * FROM cves WHERE title LIKE ? OR description LIKE ? OR cve_id LIKE ? ORDER BY published_date DESC', [searchTerm, searchTerm, searchTerm]);
-    return result.length > 0 ? result[0].values : [];
+    return mapResultToObjects(result);
   },
 
   insertCVE: (cve_id, title, description, severity, severity_score, affected_software, published_date, last_modified, reference_urls) => {
@@ -322,7 +338,8 @@ const dbUtils = {
   // Settings operations
   getSetting: (key) => {
     const result = db.exec('SELECT setting_value FROM admin_settings WHERE setting_key = ?', [key]);
-    return result.length > 0 ? result[0].values[0][0] : null;
+    const objects = mapResultToObjects(result);
+    return objects.length > 0 ? objects[0].setting_value : null;
   },
 
   updateSetting: (key, value, updated_by) => {
@@ -372,31 +389,32 @@ const statements = {
   getCVEsCount: {
     get: () => {
       const result = db.exec('SELECT COUNT(*) as count FROM cves');
-      return { count: result.length > 0 ? result[0].values[0][0] : 0 };
+      const objects = mapResultToObjects(result);
+      return objects.length > 0 ? objects[0] : { count: 0 };
     }
   },
   getCVEsBySeverityCount: {
     all: () => {
       const result = db.exec('SELECT severity, COUNT(*) as count FROM cves GROUP BY severity');
-      return result.length > 0 ? result[0].values : [];
+      return mapResultToObjects(result);
     }
   },
   getCVEsByYearCount: {
     all: () => {
       const result = db.exec('SELECT substr(published_date, 1, 4) as year, COUNT(*) as count FROM cves GROUP BY year ORDER BY year');
-      return result.length > 0 ? result[0].values : [];
+      return mapResultToObjects(result);
     }
   },
   getCVEsByYear: {
     all: (yearPattern) => {
       const result = db.exec('SELECT * FROM cves WHERE published_date LIKE ? ORDER BY published_date DESC', [yearPattern]);
-      return result.length > 0 ? result[0].values : [];
+      return mapResultToObjects(result);
     }
   },
   getRecentCriticalAlerts: {
     all: (severity, limit) => {
       const result = db.exec('SELECT cve_id, title, severity FROM cves WHERE severity = ? ORDER BY published_date DESC LIMIT ?', [severity, limit]);
-      return result.length > 0 ? result[0].values : [];
+      return mapResultToObjects(result);
     }
   },
   insertCVE: {
@@ -406,7 +424,7 @@ const statements = {
   getAllSettings: {
     all: () => {
       const result = db.exec('SELECT * FROM admin_settings ORDER BY setting_key');
-      return result.length > 0 ? result[0].values : [];
+      return mapResultToObjects(result);
     }
   },
   updateSetting: {
@@ -416,10 +434,11 @@ const statements = {
   logActivity: {
     run: (user_id, action, details, ip_address, user_agent) => {
       if (db) {
+        console.log('BINDINGS:', [user_id, action, details, ip_address || null, user_agent || null]);
         db.run(`
           INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent)
           VALUES (?, ?, ?, ?, ?)
-        `, [user_id, action, details, ip_address, user_agent]);
+        `, [user_id, action, details, ip_address || null, user_agent || null]);
         saveDatabase();
       }
     }
@@ -454,7 +473,7 @@ const statements = {
   getAllActivityLogs: {
     all: () => {
       const result = db.exec('SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 1000');
-      return result.length > 0 ? result[0].values : [];
+      return mapResultToObjects(result);
     }
   }
 };

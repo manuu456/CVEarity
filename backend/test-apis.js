@@ -103,9 +103,9 @@ async function runTests() {
       password: 'admin123'
     };
     const result = await makeRequest('POST', '/api/auth/login', loginData);
-    if (result.status === 200 && result.data.success && result.data.token) {
+    if (result.status === 200 && result.data.success && result.data.data && result.data.data.token) {
       console.log('✅ PASS: Login working, token generated');
-      global.authToken = result.data.token;
+      global.authToken = result.data.data.token;
       passCount++;
     } else {
       console.log('❌ FAIL:', result.data.message || 'Unknown error');
@@ -151,7 +151,7 @@ async function runTests() {
   // Test 6: Search CVEs
   try {
     console.log('\n📋 TEST 6: Search CVEs');
-    const result = await makeRequest('GET', '/api/cves/search?query=sql&page=1&limit=10');
+    const result = await makeRequest('GET', '/api/cves?search=sql&page=1&limit=10');
     if (result.status === 200 && result.data.success) {
       console.log(`✅ PASS: CVE search working (found ${result.data.cves.length} results)`);
       passCount++;
@@ -167,10 +167,10 @@ async function runTests() {
   // Test 7: Get CVE Statistics
   try {
     console.log('\n📋 TEST 7: Get CVE Statistics');
-    const result = await makeRequest('GET', '/api/cves/stats');
+    const result = await makeRequest('GET', '/api/cves/statistics');
     if (result.status === 200 && result.data.success) {
       console.log('✅ PASS: CVE statistics endpoint working');
-      console.log(`   Total CVEs: ${result.data.stats.totalCves}`);
+      console.log(`   Total CVEs: ${result.data.data.totalCVEs}`);
       passCount++;
     } else {
       console.log('❌ FAIL: Could not get statistics');
