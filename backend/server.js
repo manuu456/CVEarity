@@ -28,6 +28,17 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Initialize database asynchronously for serverless environments (like Vercel)
+app.use(async (req, res, next) => {
+  try {
+    await initDatabase();
+    next();
+  } catch (error) {
+    console.error('Failed to initialize database middleware:', error);
+    res.status(500).json({ success: false, message: 'Database initialization failed' });
+  }
+});
+
 // Routes
 app.use('/api/cves', cveRoutes);
 app.use('/api/auth', authRoutes);
@@ -60,17 +71,22 @@ app.use('*', (req, res) => {
   });
 });
 
-app.listen(PORT, async () => {
-  try {
-    // Initialize database asynchronously
-    await initDatabase();
-    console.log(`CVEarity backend running on http://localhost:${PORT}`);
-    console.log(`Database initialized and ready`);
-    
-    // Start scheduled jobs
-    jobScheduler.startAll();
-  } catch (error) {
-    console.error('Failed to initialize database:', error);
-    process.exit(1);
-  }
-});
+if (require.main === module) {
+  app.listen(PORT, async () => {
+    try {
+      // Initialize database asynchronously
+      await initDatabase();
+      console.log(`CVEarity backend running on http://localhost:${PORT}`);
+      console.log(`Database initialized and ready`);
+      
+      // Start scheduled jobs
+      jobScheduler.startAll();
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+      process.exit(1);
+    }
+  });
+}
+
+// Export the Express API for Vercel serverless functions
+module.exports = app;

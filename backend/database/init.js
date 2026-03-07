@@ -10,12 +10,22 @@ const initDatabase = async () => {
   if (DB) return db;
 
   const SQL = await initSqlJs();
-  const dbPath = path.join(__dirname, 'cvearity.db');
+  let dbPath;
+  if (process.env.VERCEL) {
+    dbPath = path.join('/tmp', 'cvearity.db');
+  } else {
+    dbPath = path.join(__dirname, 'cvearity.db');
+  }
 
   // Load existing database or create new
   if (fs.existsSync(dbPath)) {
     const filebuffer = fs.readFileSync(dbPath);
     db = new SQL.Database(filebuffer);
+  } else if (process.env.VERCEL && fs.existsSync(path.join(__dirname, 'cvearity.db'))) {
+    // On Vercel, copy the bundled DB from the project directory to /tmp
+    const filebuffer = fs.readFileSync(path.join(__dirname, 'cvearity.db'));
+    db = new SQL.Database(filebuffer);
+    fs.writeFileSync(dbPath, filebuffer);
   } else {
     db = new SQL.Database();
   }
@@ -34,10 +44,19 @@ const initDatabase = async () => {
 // Save database to file
 const saveDatabase = () => {
   if (db) {
-    const data = db.export();
-    const buffer = Buffer.from(data);
-    const dbPath = path.join(__dirname, 'cvearity.db');
-    fs.writeFileSync(dbPath, buffer);
+    try {
+      const data = db.export();
+      const buffer = Buffer.from(data);
+      let dbPath;
+      if (process.env.VERCEL) {
+        dbPath = path.join('/tmp', 'cvearity.db');
+      } else {
+        dbPath = path.join(__dirname, 'cvearity.db');
+      }
+      fs.writeFileSync(dbPath, buffer);
+    } catch (err) {
+      console.error('Failed to save database:', err);
+    }
   }
 };
 
