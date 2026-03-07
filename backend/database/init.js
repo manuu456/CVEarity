@@ -137,10 +137,108 @@ const createTables = () => {
       published_date TEXT NOT NULL,
       last_modified TEXT,
       reference_urls TEXT,
+      has_exploit BOOLEAN DEFAULT 0,
+      exploit_urls TEXT,
+      is_kev BOOLEAN DEFAULT 0,
+      kev_due_date TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Feature 1: Watchlist table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS watchlist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      software_name TEXT NOT NULL,
+      vendor TEXT,
+      severity_threshold TEXT DEFAULT 'all',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    )
+  `);
+
+  // Feature 1: Alerts table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS alerts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      cve_id TEXT NOT NULL,
+      watchlist_id INTEGER,
+      message TEXT,
+      is_read BOOLEAN DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+      FOREIGN KEY (watchlist_id) REFERENCES watchlist (id) ON DELETE SET NULL
+    )
+  `);
+
+  // Feature 4: CVE Timeline table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS cve_timeline (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cve_id TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      event_date TEXT,
+      description TEXT,
+      source_url TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Feature 6: User Assets table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_assets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      software_name TEXT NOT NULL,
+      version TEXT,
+      vendor TEXT,
+      category TEXT DEFAULT 'general',
+      criticality TEXT DEFAULT 'medium',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    )
+  `);
+
+  // Feature 6: Asset-CVE matches table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS asset_cve_matches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      asset_id INTEGER NOT NULL,
+      cve_id TEXT NOT NULL,
+      match_confidence REAL DEFAULT 0.5,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (asset_id) REFERENCES user_assets (id) ON DELETE CASCADE
+    )
+  `);
+
+  // Feature 9: API Keys table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      key_name TEXT NOT NULL,
+      api_key TEXT UNIQUE NOT NULL,
+      permissions TEXT DEFAULT 'read',
+      rate_limit INTEGER DEFAULT 100,
+      is_active BOOLEAN DEFAULT 1,
+      last_used DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    )
+  `);
+
+  // Add MFA columns to users (Feature 10) - safe to run multiple times
+  try { db.run('ALTER TABLE users ADD COLUMN mfa_enabled BOOLEAN DEFAULT 0'); } catch(e) {}
+  try { db.run('ALTER TABLE users ADD COLUMN mfa_secret TEXT'); } catch(e) {}
+
+  // Add exploit columns to cves (Feature 3) - safe to run multiple times
+  try { db.run('ALTER TABLE cves ADD COLUMN has_exploit BOOLEAN DEFAULT 0'); } catch(e) {}
+  try { db.run('ALTER TABLE cves ADD COLUMN exploit_urls TEXT'); } catch(e) {}
+  try { db.run('ALTER TABLE cves ADD COLUMN is_kev BOOLEAN DEFAULT 0'); } catch(e) {}
+  try { db.run('ALTER TABLE cves ADD COLUMN kev_due_date TEXT'); } catch(e) {}
 
   // Insert default admin user if not exists
   try {
@@ -506,6 +604,7 @@ module.exports = {
   initDatabase,
   db: () => db,
   saveDatabase,
+  mapResultToObjects,
   statements,
   ...dbUtils
 };

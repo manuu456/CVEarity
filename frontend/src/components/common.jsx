@@ -1,88 +1,89 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const NavBar = () => {
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [showTools, setShowTools] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
 
   const isActive = (path) => location.pathname === path;
+  const linkClass = (path) => `px-3 py-2 rounded-lg text-sm font-medium transition ${
+    isActive(path) ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'text-gray-300 hover:text-white'
+  }`;
 
   return (
     <nav className="bg-slate-950 border-b border-cyan-500/20 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <div className="flex-shrink-0 flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <div className="flex-shrink-0 flex items-center gap-2 mr-4">
               <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">CV</span>
               </div>
-              <Link
-                to="/"
-                className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 cursor-pointer hover:opacity-80 transition text-glow"
-              >
+              <Link to="/" className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 cursor-pointer hover:opacity-80 transition text-glow">
                 CVEarity
               </Link>
+            </div>
+            <Link to="/" className={linkClass('/')}>Home</Link>
+            <Link to="/dashboard" className={linkClass('/dashboard')}>Dashboard</Link>
+            <Link to="/threats" className={linkClass('/threats')}>Threats</Link>
+            {/* Tools Dropdown */}
+            <div className="relative">
+              <button onClick={() => { setShowTools(!showTools); setShowAccount(false); }}
+                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white transition flex items-center gap-1">
+                Tools <span className="text-xs">▾</span>
+              </button>
+              {showTools && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-2 z-50"
+                  onMouseLeave={() => setShowTools(false)}>
+                  <Link to="/cvss-calculator" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowTools(false)}>🧮 CVSS Calculator</Link>
+                  <Link to="/risk" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowTools(false)}>📊 Risk Dashboard</Link>
+                  <Link to="/watchlist" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowTools(false)}>👁️ Watchlist</Link>
+                  <Link to="/assets" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowTools(false)}>🖥️ Asset Inventory</Link>
+                  <Link to="/developer" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowTools(false)}>🔑 Developer API</Link>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="flex items-center gap-1">
-            <Link
-              to="/"
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                isActive('/')
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
-                  : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              Home
-            </Link>
-            <Link
-              to="/dashboard"
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                isActive('/dashboard')
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
-                  : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              Dashboard
-            </Link>
+            {/* Theme Toggle */}
+            <button onClick={toggleTheme} className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+
             {isAuthenticated ? (
               <>
                 {user?.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className={`px-4 py-2 rounded-lg font-medium transition ${
-                      isActive('/admin')
-                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
-                        : 'text-gray-300 hover:text-white'
-                    }`}
-                  >
-                    Admin
-                  </Link>
+                  <Link to="/admin" className={linkClass('/admin')}>Admin</Link>
                 )}
-                <div className="px-3 py-2 text-sm text-gray-300">
-                  {user?.username || 'Account'}
+                {/* Account Dropdown */}
+                <div className="relative">
+                  <button onClick={() => { setShowAccount(!showAccount); setShowTools(false); }}
+                    className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white transition flex items-center gap-1">
+                    {user?.username || 'Account'} <span className="text-xs">▾</span>
+                  </button>
+                  {showAccount && (
+                    <div className="absolute top-full right-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-2 z-50"
+                      onMouseLeave={() => setShowAccount(false)}>
+                      <Link to="/mfa" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowAccount(false)}>🔐 MFA Settings</Link>
+                      <Link to="/developer" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowAccount(false)}>🔑 API Keys</Link>
+                      <hr className="border-slate-700 my-1" />
+                      <button onClick={() => { logout(); setShowAccount(false); }} className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700 transition">Sign Out</button>
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={logout}
-                  className="px-4 py-2 rounded-lg bg-slate-800 text-white font-medium hover:bg-slate-700 transition"
-                >
-                  Sign Out
-                </button>
               </>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium hover:shadow-lg hover:shadow-cyan-500/50 transition"
-                >
+                <Link to="/login" className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium hover:shadow-lg hover:shadow-cyan-500/50 transition">
                   Sign In
                 </Link>
-                <Link
-                  to="/register"
-                  className="px-4 py-2 rounded-lg text-cyan-300 font-medium hover:text-white transition"
-                >
+                <Link to="/register" className="px-4 py-2 rounded-lg text-cyan-300 font-medium hover:text-white transition">
                   Sign Up
                 </Link>
               </>
