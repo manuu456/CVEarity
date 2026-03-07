@@ -1,0 +1,76 @@
+const express = require('express');
+const cors = require('cors');
+const cveRoutes = require('./routes/cveRoutes.js');
+const authRoutes = require('./routes/authRoutes.js');
+const adminRoutes = require('./routes/adminRoutes.js');
+const notificationRoutes = require('./routes/notificationRoutes.js');
+const syncRoutes = require('./routes/syncRoutes.js');
+const jobScheduler = require('./services/jobScheduler.js');
+const { initDatabase } = require('./database/init.js');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost on any port for development
+    if (origin.match(/^http:\/\/localhost:\d+$/)) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
+app.use(express.json());
+
+// Routes
+app.use('/api/cves', cveRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/sync', syncRoutes);
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Something went wrong!'
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+app.listen(PORT, async () => {
+  try {
+    // Initialize database asynchronously
+    await initDatabase();
+    console.log(`CVEarity backend running on http://localhost:${PORT}`);
+    console.log(`Database initialized and ready`);
+    
+    // Start scheduled jobs
+    jobScheduler.startAll();
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  }
+});

@@ -1,0 +1,25 @@
+{
+  "name": "cvearity",
+  "version": "1.0.0",
+  "description": "CVEarity - Vulnerability Intelligence Platform",
+  "private": true,
+  "scripts": {
+    "install-all": "npm install --prefix backend && npm install --prefix frontend",
+    "backend": "npm --prefix backend start",
+    "backend-dev": "npm --prefix backend run dev",
+    "frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "dev": "concurrently 'npm run backend-dev' 'npm run frontend'"
+  },
+  "keywords": [
+    "cve",
+    "vulnerability",
+    "security",
+    "saas"
+  ],
+  "author": "CVEarity Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
