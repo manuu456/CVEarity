@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { LiveSearch } from './LiveSearch';
 
 export const NavBar = () => {
   const location = useLocation();
@@ -9,6 +10,7 @@ export const NavBar = () => {
   const { theme, toggleTheme } = useTheme();
   const [showTools, setShowTools] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const isActive = (path) => location.pathname === path;
   const linkClass = (path) => `px-3 py-2 rounded-lg text-sm font-medium transition ${
@@ -40,6 +42,9 @@ export const NavBar = () => {
               {showTools && (
                 <div className="absolute top-full left-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-2 z-50"
                   onMouseLeave={() => setShowTools(false)}>
+                  <Link to="/live" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-red-400 transition flex items-center gap-2" onClick={() => setShowTools(false)}><span className="w-2 h-2 bg-red-400 rounded-full animate-pulse inline-block"></span>Live Feed</Link>
+                  <Link to="/compare" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowTools(false)}>⚖️ CVE Compare</Link>
+                  <hr className="border-slate-700 my-1" />
                   <Link to="/cvss-calculator" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowTools(false)}>🧮 CVSS Calculator</Link>
                   <Link to="/risk" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowTools(false)}>📊 Risk Dashboard</Link>
                   <Link to="/watchlist" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-cyan-400 transition" onClick={() => setShowTools(false)}>👁️ Watchlist</Link>
@@ -51,6 +56,14 @@ export const NavBar = () => {
           </div>
 
           <div className="flex items-center gap-1">
+            {/* Live Search Toggle */}
+            {showSearch ? (
+              <div className="w-72"><LiveSearch onClose={() => setShowSearch(false)} /></div>
+            ) : (
+              <button onClick={() => setShowSearch(true)} className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Search CVEs">
+                🔍
+              </button>
+            )}
             {/* Theme Toggle */}
             <button onClick={toggleTheme} className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
               {theme === 'dark' ? '☀️' : '🌙'}

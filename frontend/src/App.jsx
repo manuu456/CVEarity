@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { NavBar, Footer, LoadingSkeleton } from './components/common';
 import { useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CVEDetailsPage } from './pages/CVEDetailsPage';
@@ -20,6 +21,8 @@ import { AssetInventoryPage } from './pages/AssetInventoryPage';
 import { RiskDashboardPage } from './pages/RiskDashboardPage';
 import { DeveloperPage } from './pages/DeveloperPage';
 import { ThreatLandscapePage } from './pages/ThreatLandscapePage';
+import { LiveFeedPage } from './pages/LiveFeedPage';
+import { CVEComparePage } from './pages/CVEComparePage';
 import './index.css';
 
 const FullPageLoader = () => (
@@ -70,10 +73,11 @@ const AppContent = () => {
         <Route path="/" element={<LandingPage onExplore={() => {}} />} />
         <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
         <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
-        {/* CVSS Calculator - Public */}
+        {/* Public tools */}
         <Route path="/cvss-calculator" element={<CVSSCalculatorPage />} />
-        {/* Threat Landscape - Public */}
         <Route path="/threats" element={<ThreatLandscapePage />} />
+        <Route path="/live" element={<LiveFeedPage />} />
+        <Route path="/compare" element={<CVEComparePage />} />
         {/* Protected User Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/cve/:cveId" element={<ProtectedRoute><CVEDetailsPage /></ProtectedRoute>} />
@@ -101,7 +105,9 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <AppContent />
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
       </Router>
     </ThemeProvider>
   );

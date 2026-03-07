@@ -48,6 +48,7 @@ const watchlistRoutes = require('./routes/watchlistRoutes.js');
 const assetRoutes = require('./routes/assetRoutes.js');
 const reportRoutes = require('./routes/reportRoutes.js');
 const apiKeyRoutes = require('./routes/apiKeyRoutes.js');
+const liveFeedRoutes = require('./routes/liveFeedRoutes.js');
 
 // Routes
 app.use('/api/cves', cveRoutes);
@@ -59,6 +60,7 @@ app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/developer', apiKeyRoutes);
+app.use('/api/live', liveFeedRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
