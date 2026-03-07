@@ -33,6 +33,9 @@ export const NavBar = () => {
             <Link to="/" className={linkClass('/')}>Home</Link>
             <Link to="/dashboard" className={linkClass('/dashboard')}>Dashboard</Link>
             <Link to="/threats" className={linkClass('/threats')}>Threats</Link>
+            <Link to="/learn" className={`${linkClass('/learn')} flex items-center gap-1`}>
+              🎓 <span>Learn</span>
+            </Link>
             {/* Tools Dropdown */}
             <div className="relative">
               <button onClick={() => { setShowTools(!showTools); setShowAccount(false); }}

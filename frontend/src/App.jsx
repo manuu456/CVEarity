@@ -23,6 +23,7 @@ import { DeveloperPage } from './pages/DeveloperPage';
 import { ThreatLandscapePage } from './pages/ThreatLandscapePage';
 import { LiveFeedPage } from './pages/LiveFeedPage';
 import { CVEComparePage } from './pages/CVEComparePage';
+import { LearnCenterPage } from './pages/LearnCenterPage';
 import './index.css';
 
 const FullPageLoader = () => (
@@ -69,7 +70,7 @@ const AppContent = () => {
     <div className="min-h-screen bg-slate-950">
       <NavBar />
       <Routes>
-        {/* Public Routes */}
+        {/* Public routes */}
         <Route path="/" element={<LandingPage onExplore={() => {}} />} />
         <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
         <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
@@ -78,6 +79,7 @@ const AppContent = () => {
         <Route path="/threats" element={<ThreatLandscapePage />} />
         <Route path="/live" element={<LiveFeedPage />} />
         <Route path="/compare" element={<CVEComparePage />} />
+        <Route path="/learn" element={<LearnCenterPage />} />
         {/* Protected User Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/cve/:cveId" element={<ProtectedRoute><CVEDetailsPage /></ProtectedRoute>} />
