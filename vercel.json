@@ -22,6 +22,7 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "JWT_SECRET": "cvearity-super-secret-production-key-2026"
   }
 }
