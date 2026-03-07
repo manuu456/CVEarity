@@ -9,7 +9,12 @@ let db = null;
 const initDatabase = async () => {
   if (DB) return db;
 
-  const SQL = await initSqlJs();
+  const wasmPath = path.join(
+    __dirname, '..', 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm'
+  );
+  const SQL = await initSqlJs({
+    locateFile: () => wasmPath
+  });
   let dbPath;
   if (process.env.VERCEL) {
     dbPath = path.join('/tmp', 'cvearity.db');
