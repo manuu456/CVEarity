@@ -14,11 +14,16 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps, curl, or same-origin on Vercel)
     if (!origin) return callback(null, true);
     
     // Allow localhost on any port for development
     if (origin.match(/^http:\/\/localhost:\d+$/)) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel deployment URLs
+    if (origin.match(/\.vercel\.app$/)) {
       return callback(null, true);
     }
     
