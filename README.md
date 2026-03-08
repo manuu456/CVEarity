@@ -12,6 +12,20 @@ A modern SaaS web application for tracking, analyzing, and automating responses 
 - **Visual Analytics**: Charts showing severity distribution and vulnerability trends
 - **Dark Cybersecurity Theme**: Professional SaaS design with glassmorphism effects
 
+## 🏗️ System Architecture
+
+The CVEarity platform follows a modern full-stack architecture.
+
+Frontend (React + Vite)
+        |
+        | REST API Requests
+        |
+Backend (Node.js + Express)
+        |
+        | Data Processing
+        |
+Vulnerability Data (CVE Intelligence)
+
 ## 🏗️ Project Structure
 
 ```
@@ -36,6 +50,15 @@ cvearity/
     ├── server.js            # Express server entry point
     └── package.json         # Backend dependencies
 ```
+## 🌐 Deployment
+
+The application is deployed using Vercel.
+
+Frontend: React application deployed as static build  
+Backend: Node.js server deployed as serverless function
+
+Live Demo:
+https://cv-earity-jdir.vercel.app/
 
 ## 🚀 Getting Started
 
