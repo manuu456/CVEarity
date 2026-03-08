@@ -10,9 +10,8 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('cvearity-theme');
-    if (saved) return saved;
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    // Site is always dark — ignore saved preference and system preference
+    return 'dark';
   });
 
   useEffect(() => {

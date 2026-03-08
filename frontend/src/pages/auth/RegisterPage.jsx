@@ -1,233 +1,225 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { GlassmorphCard, LoadingSkeleton } from '../../components/common';
+
+const inputStyle = {
+  width: '100%',
+  padding: '12px 16px',
+  background: '#0a0a0a',
+  border: '1px solid #2a2a2a',
+  borderRadius: '8px',
+  color: '#ffffff',
+  fontSize: '14px',
+  fontWeight: '500',
+  outline: 'none',
+  transition: 'border-color 0.2s, box-shadow 0.2s'
+};
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '11px',
+  fontWeight: '700',
+  color: '#6b7280',
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  marginBottom: '8px'
+};
 
 export const RegisterPage = () => {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    firstName: '',
-    lastName: '',
-    company: ''
+    username: '', email: '', password: '', confirmPassword: '',
+    firstName: '', lastName: '', company: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [focusedField, setFocusedField] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
       return;
     }
-
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
-
     const result = await register({
-      username: formData.username,
-      email: formData.email,
-      password: formData.password,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      company: formData.company
+      username: formData.username, email: formData.email, password: formData.password,
+      firstName: formData.firstName, lastName: formData.lastName, company: formData.company
     });
-
     if (result.success) {
       navigate('/dashboard');
     } else {
-      setError(result.message);
+      setError(result.message || 'Registration failed');
     }
-
     setLoading(false);
   };
 
+  const getFocusStyle = (name) => ({
+    ...inputStyle,
+    borderColor: focusedField === name ? '#E53E3E' : '#2a2a2a',
+    boxShadow: focusedField === name ? '0 0 0 3px rgba(229,62,62,0.12)' : 'none'
+  });
+
+  const focusProps = (name) => ({
+    onFocus: () => setFocusedField(name),
+    onBlur: () => setFocusedField('')
+  });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4 py-8">
-      <div className="max-w-md w-full space-y-8">
+    <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 16px' }}>
+      <div style={{ width: '100%', maxWidth: '560px' }}>
+
         {/* Header */}
-        <div className="text-center">
-          <Link to="/" className="inline-block">
-            <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 text-glow">
-              CVEarity
-            </span>
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%',
+                border: '2px solid #E53E3E', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 14px rgba(229,62,62,0.5)'
+              }}>
+                <svg viewBox="0 0 24 24" style={{ width: '16px', height: '16px' }} fill="#E53E3E">
+                  <circle cx="12" cy="12" r="2"/>
+                  <path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 3a7 7 0 110 14A7 7 0 0112 5zm0 3a4 4 0 100 8 4 4 0 000-8z"/>
+                </svg>
+              </div>
+              <span style={{ fontSize: '24px', fontWeight: '900', color: '#ffffff', letterSpacing: '-0.03em' }}>CVEarity</span>
+            </div>
           </Link>
-          <h2 className="mt-6 text-2xl font-bold text-white">
-            Create your account
-          </h2>
-          <p className="mt-2 text-gray-400">
-            Join CVEarity to access vulnerability intelligence
+          <p style={{ fontSize: '10px', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.25em', marginBottom: '16px' }}>
+            Intelligence Framework
+          </p>
+          <h1 style={{ fontSize: '26px', fontWeight: '900', color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.02em' }}>
+            Create Account
+          </h1>
+          <p style={{ fontSize: '13px', color: '#6b7280' }}>
+            Join the global vulnerability intelligence network.
           </p>
         </div>
 
-        {/* Register Form */}
-        <GlassmorphCard className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Card */}
+        <div style={{
+          background: '#0f0f0f',
+          border: '1px solid #1f1f1f',
+          borderRadius: '16px',
+          padding: '36px',
+          boxShadow: '0 24px 48px rgba(0,0,0,0.6)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg,#E53E3E,#ff6b6b,#E53E3E)' }}/>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                <p className="text-red-400 text-sm">{error}</p>
+              <div style={{ background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.25)', borderLeft: '3px solid #E53E3E', borderRadius: '8px', padding: '12px 16px' }}>
+                <p style={{ color: '#f87171', fontSize: '12px', fontWeight: '700', margin: 0 }}>{error}</p>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Name Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-2">
-                  First Name (Optional)
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
-                  placeholder="Enter first name"
-                />
+                <label style={labelStyle}>First Name</label>
+                <input name="firstName" type="text" value={formData.firstName} onChange={handleChange} placeholder="First name" style={getFocusStyle('firstName')} {...focusProps('firstName')} />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-2">
-                  Last Name (Optional)
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
-                  placeholder="Enter last name"
-                />
+                <label style={labelStyle}>Last Name</label>
+                <input name="lastName" type="text" value={formData.lastName} onChange={handleChange} placeholder="Last name" style={getFocusStyle('lastName')} {...focusProps('lastName')} />
               </div>
             </div>
 
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
-                Username *
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
-                placeholder="Choose a username"
-              />
+            {/* Username / Email Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={labelStyle}>Username *</label>
+                <input name="username" type="text" required value={formData.username} onChange={handleChange} placeholder="Choose a username" style={getFocusStyle('username')} {...focusProps('username')} autoComplete="username" />
+              </div>
+              <div>
+                <label style={labelStyle}>Email *</label>
+                <input name="email" type="email" required value={formData.email} onChange={handleChange} placeholder="your@email.com" style={getFocusStyle('email')} {...focusProps('email')} autoComplete="email" />
+              </div>
             </div>
 
+            {/* Company */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email Address *
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
-                  placeholder="Enter your email address"
-              />
+              <label style={labelStyle}>Organization</label>
+              <input name="company" type="text" value={formData.company} onChange={handleChange} placeholder="Company or institution (optional)" style={getFocusStyle('company')} {...focusProps('company')} />
             </div>
 
-            <div>
-              <label htmlFor="company" className="block text-sm font-medium text-gray-300 mb-2">
-                Company (Optional)
-              </label>
-              <input
-                id="company"
-                name="company"
-                type="text"
-                value={formData.company}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
-                  placeholder="Your company name (optional)"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                Password *
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
-                  placeholder="At least 6 characters"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
-                Confirm Password *
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
-                  placeholder="Re-enter your password"
-              />
+            {/* Password Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={labelStyle}>Password *</label>
+                <input name="password" type="password" required value={formData.password} onChange={handleChange} placeholder="Min 6 characters" style={getFocusStyle('password')} {...focusProps('password')} autoComplete="new-password" />
+              </div>
+              <div>
+                <label style={labelStyle}>Confirm Password *</label>
+                <input name="confirmPassword" type="password" required value={formData.confirmPassword} onChange={handleChange} placeholder="Re-enter password" style={getFocusStyle('confirmPassword')} {...focusProps('confirmPassword')} autoComplete="new-password" />
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                width: '100%',
+                padding: '13px',
+                background: loading ? '#7f1d1d' : '#E53E3E',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                letterSpacing: '0.05em',
+                boxShadow: '0 0 20px rgba(229,62,62,0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginTop: '4px'
+              }}
             >
               {loading ? (
-                <div className="flex items-center justify-center">
-                  <LoadingSkeleton className="w-5 h-5 rounded-full mr-2" />
-                  Creating account...
-                </div>
+                <>
+                  <div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}/>
+                  Creating Account...
+                </>
               ) : (
                 'Create Account'
               )}
             </button>
           </form>
-        </GlassmorphCard>
-
-        {/* Login Link */}
-        <div className="text-center">
-          <p className="text-gray-400">
-            Already have an account?{' '}
-            <Link
-              to="/login"
-              className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors duration-300"
-            >
-              Sign in here
-            </Link>
-          </p>
         </div>
+
+        {/* Login link */}
+        <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '13px', color: '#6b7280' }}>
+          Already have an account?{' '}
+          <Link to="/login" style={{ color: '#E53E3E', fontWeight: '700', textDecoration: 'none' }}>
+            Sign In
+          </Link>
+        </p>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input::placeholder { color: #3f3f46; }
+        input:focus { outline: none; }
+        @media (max-width: 480px) {
+          form > div[style*="grid"] { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 };

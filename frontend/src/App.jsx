@@ -9,11 +9,9 @@ import { DashboardPage } from './pages/DashboardPage';
 import { CVEDetailsPage } from './pages/CVEDetailsPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
-import { MFASetupPage } from './pages/auth/MFASetupPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { UserManagementPage } from './pages/admin/UserManagementPage';
 import { ActivityLogsPage } from './pages/admin/ActivityLogsPage';
-import { CustomerCareDashboardPage } from './pages/admin/CustomerCareDashboardPage';
 import { ReportsPage } from './pages/admin/ReportsPage';
 import { WatchlistPage } from './pages/WatchlistPage';
 import { CVSSCalculatorPage } from './pages/CVSSCalculatorPage';
@@ -24,11 +22,16 @@ import { ThreatLandscapePage } from './pages/ThreatLandscapePage';
 import { LiveFeedPage } from './pages/LiveFeedPage';
 import { CVEComparePage } from './pages/CVEComparePage';
 import { LearnCenterPage } from './pages/LearnCenterPage';
+import { MFASettingsPage } from './pages/MFASettingsPage';
+import { UserSettingsPage } from './pages/UserSettingsPage';
+import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+import { DataSyncPage } from './pages/admin/DataSyncPage';
+import { LearnCenterManagePage } from './pages/admin/LearnCenterManagePage';
 import './index.css';
 
 const FullPageLoader = () => (
-  <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-    <LoadingSkeleton className="h-12 w-12 rounded-full" />
+  <div className="min-h-screen bg-page flex items-center justify-center">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-main"></div>
   </div>
 );
 
@@ -67,7 +70,7 @@ const AuthRoute = ({ children }) => {
 // Main App Component
 const AppContent = () => {
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-page transition-theme">
       <NavBar />
       <Routes>
         {/* Public routes */}
@@ -87,13 +90,16 @@ const AppContent = () => {
         <Route path="/assets" element={<ProtectedRoute><AssetInventoryPage /></ProtectedRoute>} />
         <Route path="/risk" element={<ProtectedRoute><RiskDashboardPage /></ProtectedRoute>} />
         <Route path="/developer" element={<ProtectedRoute><DeveloperPage /></ProtectedRoute>} />
-        <Route path="/mfa" element={<ProtectedRoute><MFASetupPage /></ProtectedRoute>} />
-        <Route path="/customer-care" element={<ProtectedRoute><CustomerCareDashboardPage /></ProtectedRoute>} />
+        <Route path="/mfa" element={<ProtectedRoute><MFASettingsPage /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><UserSettingsPage /></ProtectedRoute>} />
         {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboardPage /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute adminOnly><UserManagementPage /></ProtectedRoute>} />
         <Route path="/admin/activity" element={<ProtectedRoute adminOnly><ActivityLogsPage /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute adminOnly><ReportsPage /></ProtectedRoute>} />
+        <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettingsPage /></ProtectedRoute>} />
+        <Route path="/admin/sync" element={<ProtectedRoute adminOnly><DataSyncPage /></ProtectedRoute>} />
+        <Route path="/admin/learn" element={<ProtectedRoute adminOnly><LearnCenterManagePage /></ProtectedRoute>} />
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

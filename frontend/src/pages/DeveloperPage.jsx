@@ -1,5 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { LoadingSkeleton } from '../components/common';
+
+const S = {
+  page: { minHeight: '100vh', background: '#050505', paddingTop: '96px', paddingBottom: '48px', paddingLeft: '24px', paddingRight: '24px' },
+  wrap: { maxWidth: '896px', margin: '0 auto' },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px', borderBottom: '1px solid #1f1f1f', paddingBottom: '32px', flexWrap: 'wrap', gap: '16px' },
+  h1: { fontSize: '36px', fontWeight: '900', color: '#fff', letterSpacing: '-0.03em', margin: 0 },
+  badge: { padding: '2px 8px', background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#9ca3af', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', borderRadius: '4px' },
+  muted: { color: '#9ca3af', fontSize: '13px', fontWeight: '500', marginTop: '6px' },
+  btnRed: { padding: '10px 24px', background: '#E53E3E', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.15em', cursor: 'pointer' },
+  card: { background: '#0f0f0f', border: '1px solid #1f1f1f', borderRadius: '12px', padding: '32px', marginBottom: '32px', position: 'relative', overflow: 'hidden' },
+  input: { flex: 1, padding: '10px 16px', background: '#050505', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: '500', outline: 'none' },
+  btnGreen: { padding: '10px 32px', background: 'transparent', color: '#22C55E', border: '2px solid #22C55E', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' },
+  keyRow: { padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1a1a1a' },
+  mono: { fontFamily: 'monospace', fontSize: '11px', color: '#9ca3af' },
+  getBadge: { padding: '2px 6px', background: '#1e3a5f', color: '#60a5fa', fontSize: '9px', fontWeight: '700', borderRadius: '3px' },
+  codeBg: { background: '#000', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '16px', fontFamily: 'monospace', fontSize: '12px', color: '#22C55E', overflowX: 'auto' },
+};
 
 export const DeveloperPage = () => {
   const [keys, setKeys] = useState([]);
@@ -32,77 +50,136 @@ export const DeveloperPage = () => {
 
   const copyKey = (key) => navigator.clipboard.writeText(key);
 
-  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div></div>;
+  if (loading) return (
+    <div style={S.page}>
+      <div style={S.wrap}>
+        <LoadingSkeleton className="h-10 w-64 rounded-lg mb-8" />
+        <LoadingSkeleton className="h-48 w-full rounded-xl mb-4" />
+        <LoadingSkeleton className="h-48 w-full rounded-xl" />
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+    <div style={S.page}>
+      <div style={S.wrap}>
+
+        {/* Header */}
+        <div style={S.header}>
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Developer API</h1>
-            <p className="text-slate-400 mt-1">Manage your API keys for programmatic access</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+              <h1 style={S.h1}>API Access</h1>
+              <span style={S.badge}>Developer</span>
+            </div>
+            <p style={S.muted}>Manage API keys for programmatic access to vulnerability intelligence.</p>
           </div>
-          <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors">+ Generate Key</button>
+          <button style={S.btnRed} onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : '+ New Key'}
+          </button>
         </div>
 
-        {/* New key alert */}
+        {/* New key success alert */}
         {newKey && (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 mb-6">
-            <p className="text-green-400 font-medium mb-2">🔑 New API Key Generated — Copy it now!</p>
-            <div className="bg-slate-900 rounded-lg p-3 font-mono text-sm text-cyan-400 break-all">{newKey}</div>
-            <div className="flex gap-2 mt-2">
-              <button onClick={() => copyKey(newKey)} className="text-xs text-slate-400 hover:text-cyan-400">📋 Copy</button>
-              <button onClick={() => setNewKey(null)} className="text-xs text-slate-400 hover:text-red-400">✕ Dismiss</button>
-            </div>
-          </div>
-        )}
-
-        {showForm && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-6">
-            <form onSubmit={generateKey} className="flex gap-4">
-              <input type="text" placeholder="Key name (e.g. CI/CD Pipeline)" value={keyName} onChange={e => setKeyName(e.target.value)} className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500" required />
-              <button type="submit" className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg px-6 py-2 font-medium transition-colors">Generate</button>
-            </form>
-          </div>
-        )}
-
-        {/* API Keys List */}
-        <div className="space-y-3">
-          {keys.length === 0 ? (
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-12 text-center"><p className="text-slate-400">No API keys yet</p></div>
-          ) : keys.map(k => (
-            <div key={k.id} className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-white font-medium">{k.key_name}</h3>
-                <p className="text-slate-400 text-sm font-mono">{k.api_key_preview} • {k.permissions} • {k.is_active ? '✅ Active' : '❌ Inactive'}</p>
+          <div style={{ ...S.card, border: '1px solid rgba(34,197,94,0.3)', marginBottom: '32px' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', background: '#22C55E' }} />
+            <div style={{ paddingLeft: '12px' }}>
+              <p style={{ color: '#22C55E', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                API Key Generated
+              </p>
+              <p style={{ color: '#9ca3af', fontSize: '11px', marginBottom: '16px' }}>
+                This key will not be shown again. Copy it now and store it securely.
+              </p>
+              <div style={{ background: '#000', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '12px 16px', fontFamily: 'monospace', fontSize: '12px', color: '#22C55E', wordBreak: 'break-all', marginBottom: '16px' }}>
+                {newKey}
               </div>
-              <button onClick={() => revokeKey(k.id)} className="text-red-400 hover:text-red-300 px-3 py-1 rounded-lg transition-colors">Revoke</button>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <button onClick={() => copyKey(newKey)} style={{ ...S.btnGreen, padding: '6px 16px', fontSize: '10px' }}>Copy Key</button>
+                <button onClick={() => setNewKey(null)} style={{ padding: '6px 16px', background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>Dismiss</button>
+              </div>
             </div>
-          ))}
+          </div>
+        )}
+
+        {/* New key form */}
+        {showForm && (
+          <div style={{ ...S.card, marginBottom: '32px' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', background: '#E53E3E' }} />
+            <div style={{ paddingLeft: '12px' }}>
+              <h3 style={{ color: '#fff', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '20px' }}>New API Key</h3>
+              <form onSubmit={generateKey} style={{ display: 'flex', gap: '12px' }}>
+                <input
+                  type="text"
+                  placeholder="Key name (e.g. Jenkins CI)"
+                  value={keyName}
+                  onChange={e => setKeyName(e.target.value)}
+                  style={S.input}
+                  required
+                />
+                <button type="submit" style={S.btnRed}>Generate</button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Keys list */}
+        <div style={{ marginBottom: '48px' }}>
+          <h3 style={{ color: '#fff', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}>Active API Keys</h3>
+          {keys.length === 0 ? (
+            <div style={{ ...S.card, textAlign: 'center', padding: '48px' }}>
+              <p style={{ color: '#4b5563', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em' }}>No API keys yet</p>
+            </div>
+          ) : (
+            <div style={{ background: '#0f0f0f', border: '1px solid #1f1f1f', borderRadius: '12px', overflow: 'hidden' }}>
+              {keys.map((k, i) => (
+                <div key={k.id} style={{ ...S.keyRow, borderBottom: i < keys.length - 1 ? '1px solid #1a1a1a' : 'none' }}>
+                  <div>
+                    <div style={{ color: '#fff', fontWeight: '700', fontSize: '14px', marginBottom: '4px' }}>{k.key_name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={S.mono}>{k.api_key_preview}</span>
+                      <span style={{ color: '#2a2a2a' }}>·</span>
+                      <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#9ca3af' }}>{k.permissions}</span>
+                      <span style={{ color: '2a2a2a' }}>·</span>
+                      <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: k.is_active ? '#22C55E' : '#ef4444' }}>
+                        {k.is_active ? 'Active' : 'Revoked'}
+                      </span>
+                    </div>
+                  </div>
+                  <button onClick={() => revokeKey(k.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }}>Revoke</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* API Documentation */}
-        <div className="mt-8 bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-          <h2 className="text-xl font-bold text-white mb-4">📖 API Documentation</h2>
-          <div className="space-y-4 text-sm">
-            <div>
-              <h4 className="text-cyan-400 font-mono mb-1">GET /api/cves</h4>
-              <p className="text-slate-400">List all CVEs. Query params: severity, search, year</p>
-            </div>
-            <div>
-              <h4 className="text-cyan-400 font-mono mb-1">GET /api/cves/:id</h4>
-              <p className="text-slate-400">Get a specific CVE by ID</p>
-            </div>
-            <div>
-              <h4 className="text-cyan-400 font-mono mb-1">GET /api/cves/statistics</h4>
-              <p className="text-slate-400">Get CVE statistics (counts by severity, year)</p>
-            </div>
-            <div className="bg-slate-900 rounded-lg p-3">
-              <p className="text-slate-400 mb-1">Usage with API key:</p>
-              <code className="text-cyan-400 text-xs">curl -H "X-API-Key: cvea_your_key" https://your-domain.vercel.app/api/cves</code>
+        {/* API Docs */}
+        <div style={S.card}>
+          <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: '900', letterSpacing: '-0.02em', marginBottom: '32px' }}>API Reference</h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+            {[
+              { method: 'GET', path: '/api/cves', desc: 'List vulnerabilities. Params: severity, search, year' },
+              { method: 'GET', path: '/api/cves/:id', desc: 'Get full details for a CVE identifier' },
+              { method: 'GET', path: '/api/cves/statistics', desc: 'Severity distribution and trend data' },
+              { method: 'GET', path: '/api/watchlist', desc: 'Your tracked software watchlist entries' },
+            ].map((e, i) => (
+              <div key={i}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={S.getBadge}>{e.method}</span>
+                  <code style={{ fontFamily: 'monospace', fontSize: '12px', color: '#e2e8f0', fontWeight: '700' }}>{e.path}</code>
+                </div>
+                <p style={{ color: '#9ca3af', fontSize: '12px' }}>{e.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <p style={{ color: '#6b7280', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Example Request</p>
+            <div style={S.codeBg}>
+              {'curl -H "X-API-Key: YOUR_KEY" https://your-domain.com/api/cves'}
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

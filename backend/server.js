@@ -49,6 +49,8 @@ const assetRoutes = require('./routes/assetRoutes.js');
 const reportRoutes = require('./routes/reportRoutes.js');
 const apiKeyRoutes = require('./routes/apiKeyRoutes.js');
 const liveFeedRoutes = require('./routes/liveFeedRoutes.js');
+const newsRoutes = require('./routes/newsRoutes.js');
+const learnRoutes = require('./routes/learnRoutes.js');
 
 // Routes
 app.use('/api/cves', cveRoutes);
@@ -61,6 +63,8 @@ app.use('/api/assets', assetRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/developer', apiKeyRoutes);
 app.use('/api/live', liveFeedRoutes);
+app.use('/api/news', newsRoutes);
+app.use('/api/learn', learnRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -88,19 +92,12 @@ app.use('*', (req, res) => {
 });
 
 if (require.main === module) {
-  app.listen(PORT, async () => {
-    try {
-      // Initialize database asynchronously
-      await initDatabase();
-      console.log(`CVEarity backend running on http://localhost:${PORT}`);
-      console.log(`Database initialized and ready`);
-      
-      // Start scheduled jobs
-      jobScheduler.startAll();
-    } catch (error) {
-      console.error('Failed to initialize database:', error);
-      process.exit(1);
-    }
+  app.listen(PORT, () => {
+    console.log(`CVEarity backend running on http://localhost:${PORT}`);
+    console.log(`Database initialized and ready`);
+
+    // Start scheduled jobs
+    jobScheduler.startAll();
   });
 }
 

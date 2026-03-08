@@ -14,7 +14,9 @@ router.get('/users', (req, res) => {
     const users = statements.getAllUsers.all();
     res.json({
       success: true,
-      users: users
+      data: {
+        users: users
+      }
     });
   } catch (error) {
     console.error('Get users error:', error);
@@ -278,13 +280,26 @@ router.get('/activity-logs', (req, res) => {
   }
 });
 
+// Purge all activity logs
+router.delete('/activity', (_req, res) => {
+  try {
+    const { db, saveDatabase } = require('../database/init');
+    db().run('DELETE FROM activity_logs');
+    saveDatabase();
+    res.json({ success: true, message: 'Activity logs purged' });
+  } catch (error) {
+    console.error('Purge logs error:', error);
+    res.status(500).json({ success: false, message: 'Failed to purge logs' });
+  }
+});
+
 // Get system statistics
 router.get('/stats', (req, res) => {
   try {
-    const totalUsers = statements.db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-    const activeUsers = statements.db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1').get().count;
-    const adminUsers = statements.db.prepare('SELECT COUNT(*) as count FROM users WHERE role = "admin"').get().count;
-    const recentActivity = statements.db.prepare('SELECT COUNT(*) as count FROM activity_logs WHERE created_at >= datetime("now", "-24 hours")').get().count;
+    const totalUsers = db().prepare('SELECT COUNT(*) as count FROM users').get().count;
+    const activeUsers = db().prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1').get().count;
+    const adminUsers = db().prepare('SELECT COUNT(*) as count FROM users WHERE role = "admin"').get().count;
+    const recentActivity = db().prepare('SELECT COUNT(*) as count FROM activity_logs WHERE created_at >= datetime("now", "-24 hours")').get().count;
 
     res.json({
       success: true,

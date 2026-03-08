@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { SecurityNewsFeed } from '../components/SecurityNewsFeed';
 
 const useInterval = (callback, delay) => {
   useEffect(() => {
@@ -27,11 +28,11 @@ const useCountUp = (target, duration = 1200) => {
 };
 
 const severityColors = {
-  critical: { card: 'border-red-500/40 bg-red-500/5', badge: 'bg-red-500/20 text-red-400', bar: 'bg-red-500' },
-  high:     { card: 'border-orange-500/40 bg-orange-500/5', badge: 'bg-orange-500/20 text-orange-400', bar: 'bg-orange-500' },
-  medium:   { card: 'border-yellow-500/40 bg-yellow-500/5', badge: 'bg-yellow-500/20 text-yellow-400', bar: 'bg-yellow-500' },
-  low:      { card: 'border-green-500/40 bg-green-500/5', badge: 'bg-green-500/20 text-green-400', bar: 'bg-green-500' },
-  unknown:  { card: 'border-slate-600 bg-slate-800/20', badge: 'bg-slate-500/20 text-slate-400', bar: 'bg-slate-500' }
+  critical: { card: 'border-l-red-500', badge: 'bg-red-500/10 text-red-500 border-red-500/20', bar: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]' },
+  high:     { card: 'border-l-orange-500', badge: 'bg-orange-500/10 text-orange-500 border-orange-500/20', bar: 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]' },
+  medium:   { card: 'border-l-yellow', badge: 'bg-yellow/10 text-yellow border-yellow/20', bar: 'bg-yellow shadow-[0_0_8px_rgba(234,179,8,0.4)]' },
+  low:      { card: 'border-l-green-500', badge: 'bg-green-500/10 text-green-500 border-green-500/20', bar: 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' },
+  unknown:  { card: 'border-l-muted', badge: 'bg-muted/10 text-muted border-subtle', bar: 'bg-muted' }
 };
 
 const LiveCard = ({ cve, isNew }) => {
@@ -42,44 +43,47 @@ const LiveCard = ({ cve, isNew }) => {
   return (
     <div
       onClick={() => navigate(`/cve/${cve.cve_id}`)}
-      className={`border rounded-xl p-4 cursor-pointer transition-all duration-500 hover:scale-[1.01] hover:shadow-lg hover:-translate-y-0.5
-        ${colors.card} ${isNew ? 'animate-pulse-once ring-1 ring-cyan-400/50' : ''}`}
+      className={`bg-card border border-subtle border-l-4 rounded-xl p-5 cursor-pointer transition-all duration-300 hover:shadow-md group flex items-center justify-between transition-theme
+        ${colors.card} ${isNew ? 'ring-2 ring-yellow ring-opacity-50' : ''}`}
     >
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <span className="text-cyan-400 font-mono font-bold text-sm">{cve.cve_id}</span>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {isNew && <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">NEW</span>}
-          <span className={`text-xs px-2 py-1 rounded-full font-semibold uppercase ${colors.badge}`}>{cve.severity}</span>
+      <div className="flex-1 min-w-0 pr-6">
+        <div className="flex items-center gap-3 mb-2">
+           <span className="text-main font-black text-xs uppercase tracking-widest">{cve.cve_id}</span>
+           <span className={`text-[9px] px-2 py-0.5 rounded border font-black uppercase tracking-widest ${colors.badge}`}>{cve.severity}</span>
+           {isNew && <span className="text-[9px] bg-yellow text-black px-2 py-0.5 rounded font-black uppercase animate-pulse">New Intelligence</span>}
+        </div>
+        <p className="text-main text-sm font-bold truncate group-hover:text-opacity-80 transition">{cve.title || 'Vulnerability intelligence record'}</p>
+        <div className="mt-4 flex items-center gap-6">
+           <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black text-muted uppercase tracking-widest">Score:</span>
+              <span className="text-xs font-black text-main">{score.toFixed(1)}</span>
+           </div>
+           <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black text-muted uppercase tracking-widest">Modified:</span>
+              <span className="text-xs font-black text-main">
+                 {cve.published_date ? new Date(cve.published_date).toLocaleDateString() : 'Pending'}
+              </span>
+           </div>
         </div>
       </div>
-      <p className="text-white text-sm font-medium mb-3 line-clamp-2">{cve.title}</p>
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <div className="flex justify-between text-xs text-slate-400 mb-1">
-            <span>CVSS</span>
-            <span className="text-white font-bold">{score.toFixed(1)}</span>
-          </div>
-          <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-700 ${colors.bar}`} style={{ width: `${(score / 10) * 100}%` }}></div>
-          </div>
-        </div>
-        <span className="text-slate-500 text-xs whitespace-nowrap">
-          {cve.published_date ? new Date(cve.published_date).toLocaleDateString() : 'Unknown'}
-        </span>
+      
+      <div className="flex-shrink-0 w-24 h-1.5 bg-page rounded-full overflow-hidden transition-theme">
+         <div className={`h-full rounded-full transition-all duration-1000 ${colors.bar}`} style={{ width: `${(score / 10) * 100}%` }}></div>
       </div>
     </div>
   );
 };
 
-const StatCard = ({ label, value, color, icon }) => {
+const StatCard = ({ label, value, colorClass, icon }) => {
   const animated = useCountUp(value);
   return (
-    <div className={`bg-slate-800/50 border rounded-xl p-4 text-center ${color}`}>
-      <div className="text-2xl mb-1">{icon}</div>
-      <div className={`text-3xl font-bold mb-1 ${color.includes('red') ? 'text-red-400' : color.includes('orange') ? 'text-orange-400' : color.includes('yellow') ? 'text-yellow-400' : 'text-cyan-400'}`}>
-        {animated}
+    <div className={`bg-card border border-subtle rounded-xl p-6 shadow-sm transition-theme`}>
+      <div className="text-muted text-[9px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+         {icon} {label}
       </div>
-      <div className="text-slate-400 text-xs">{label}</div>
+      <div className={`text-3xl font-black ${colorClass} tracking-tighter`}>
+        {animated.toLocaleString()}
+      </div>
     </div>
   );
 };
@@ -104,9 +108,11 @@ export const LiveFeedPage = () => {
 
       if (isRefresh && cves.length > 0) {
         const existingIds = new Set(cves.map(c => c.cve_id));
-        const newIds = new Set(freshCVEs.filter(c => !existingIds.has(c.cve_id)).map(c => c.cve_id));
-        setNewCveIds(newIds);
-        setTimeout(() => setNewCveIds(new Set()), 5000);
+        const newIds = freshCVEs.filter(c => !existingIds.has(c.cve_id)).map(c => c.cve_id);
+        if (newIds.length > 0) {
+           setNewCveIds(new Set(newIds));
+           setTimeout(() => setNewCveIds(new Set()), 10000);
+        }
       }
 
       setCVEs(freshCVEs);
@@ -119,79 +125,109 @@ export const LiveFeedPage = () => {
   }, [cves]);
 
   useEffect(() => { fetchFeed(false); }, []);
-
-  // Auto-refresh every 30 seconds
   useInterval(() => fetchFeed(true), 30000);
-
-  // Tick "seconds ago" counter
   useInterval(() => setSecondsAgo(s => s + 1), 1000);
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Live CVE Feed
-            </h1>
-            <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 border border-red-500/40 rounded-full">
-              <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-              <span className="text-red-400 text-xs font-bold uppercase tracking-wider">Live</span>
+    <div className="min-h-screen bg-page pt-24 pb-12 px-6 transition-theme">
+      <div className="max-w-7xl mx-auto">
+        {/* Intelligence Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6 border-b border-subtle pb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+               <h1 className="text-4xl font-black text-main tracking-tight">Security Intelligence</h1>
+               <div className="flex items-center gap-2 px-2 py-0.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded shadow-[0_0_12px_rgba(220,38,38,0.4)]">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                  Real-time
+               </div>
             </div>
+            <p className="text-muted text-sm font-medium">Monitoring global vulnerability streams from primary reporting nodes.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-slate-500 text-sm">
-              Refreshes in {30 - (secondsAgo % 30)}s
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+               <div className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Last Node Update</div>
+               <div className="text-xs font-black text-main">{secondsAgo}s ago / auto-sync 30s</div>
+            </div>
             <button
               onClick={() => fetchFeed(true)}
-              className="px-4 py-2 bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-lg text-sm hover:bg-cyan-500/30 transition-colors"
+              className="tenable-btn-secondary px-6 py-3 text-[10px] tracking-[0.2em] uppercase"
             >
-              ↻ Refresh Now
+              Manual Synchronize
             </button>
           </div>
         </div>
 
-        {/* Stats Row */}
-        {stats && (
-          <div className="grid grid-cols-4 gap-3 mb-6">
-            <StatCard label="Total CVEs" value={stats.totalCVEs || 0} color="border-cyan-500/20" icon="📊" />
-            <StatCard label="Critical" value={stats.bySeverity?.critical || 0} color="border-red-500/20" icon="🔴" />
-            <StatCard label="High" value={stats.bySeverity?.high || 0} color="border-orange-500/20" icon="🟠" />
-            <StatCard label="Medium" value={stats.bySeverity?.medium || 0} color="border-yellow-500/20" icon="🟡" />
-          </div>
-        )}
+        {/* Intelligence Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
 
-        {/* Last updated banner */}
-        {lastRefreshed && (
-          <div className="bg-slate-800/30 border border-slate-700 rounded-lg px-4 py-2 mb-4 flex items-center justify-between text-xs text-slate-400">
-            <span>📡 Auto-refreshing every 30 seconds</span>
-            <span>Last updated: {lastRefreshed.toLocaleTimeString()} ({secondsAgo}s ago)</span>
-          </div>
-        )}
-
-        {/* CVE Cards */}
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-24 bg-slate-800/50 border border-slate-700 rounded-xl animate-pulse"></div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {cves.length === 0 ? (
-              <div className="text-center py-20 text-slate-400">
-                <p className="text-lg mb-2">No CVEs in the feed yet</p>
-                <p className="text-sm">Sync from NVD using the admin panel to populate the feed</p>
+          {/* ── Left Infrastructure (CVE Feed) ── */}
+          <div className="lg:col-span-3 space-y-8">
+            {/* Aggregate Metrics */}
+            {stats && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard label="Global records" value={stats.totalCVEs || 0} colorClass="text-main" icon="📑" />
+                <StatCard label="Critical" value={stats.bySeverity?.critical || 0} colorClass="text-red-500" icon="🔋" />
+                <StatCard label="High Impact" value={stats.bySeverity?.high || 0} colorClass="text-orange-500" icon="⚠️" />
+                <StatCard label="Evaluated" value={stats.bySeverity?.medium || 0} colorClass="text-yellow" icon="🔍" />
               </div>
-            ) : (
-              cves.map(cve => (
-                <LiveCard key={cve.cve_id} cve={cve} isNew={newCveIds.has(cve.cve_id)} />
-              ))
             )}
+
+            {/* Event Log Title */}
+            <div className="flex items-center justify-between border-b border-subtle pb-4">
+               <h3 className="text-main font-black text-[11px] uppercase tracking-[0.2em]">Primary Intelligence Stream</h3>
+               <span className="text-[9px] font-black text-muted uppercase">Showing Latest 30 Events</span>
+            </div>
+
+            {/* Event Cards */}
+            <div className="space-y-4">
+              {loading ? (
+                [...Array(6)].map((_, i) => (
+                  <div key={i} className="h-24 bg-card border border-subtle rounded-xl animate-pulse shadow-sm"></div>
+                ))
+              ) : (
+                cves.length === 0 ? (
+                  <div className="text-center py-24 bg-card border border-subtle rounded-2xl shadow-sm transition-theme">
+                    <div className="text-4xl mb-4">📡</div>
+                    <p className="text-main font-black text-sm uppercase tracking-widest mb-2">No Active Stream detected</p>
+                    <p className="text-muted text-xs font-medium">Initialize system synchronization via the admin console.</p>
+                  </div>
+                ) : (
+                  cves.map(cve => (
+                    <LiveCard key={cve.cve_id} cve={cve} isNew={newCveIds.has(cve.cve_id)} />
+                  ))
+                )
+              )}
+            </div>
           </div>
-        )}
+
+          {/* ── Right Intelligence (Security News & Exploits) ── */}
+          <div className="lg:col-span-2 space-y-8">
+             <div className="bg-main rounded-2xl p-8 text-white shadow-lg overflow-hidden relative mb-8 transition-theme">
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                   <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <h4 className="text-yellow font-black text-[10px] uppercase tracking-[0.3em] mb-4">Feed Intelligence</h4>
+                <p className="text-lg font-medium leading-tight text-white/80">
+                   Integrating Hacker News real-time alerts and Offensive Security exploit databases for global threat landscape visibility.
+                </p>
+             </div>
+            
+            <div className="space-y-8">
+               <SecurityNewsFeed
+                 defaultTab="news"
+                 maxItems={8}
+                 compact={false}
+                 autoRefresh={true}
+               />
+               <SecurityNewsFeed
+                 defaultTab="exploits"
+                 maxItems={8}
+                 compact={false}
+                 autoRefresh={true}
+               />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

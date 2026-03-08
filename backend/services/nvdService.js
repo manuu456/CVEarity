@@ -1,127 +1,77 @@
 /**
  * NVD API Service - Real CVE Data Integration
  * Fetches vulnerability data from NIST National Vulnerability Database
+ * Uses NVD API v2.0 (v1.0 was retired December 2023)
  */
 
 const axios = require('axios');
 
-// NVD API endpoints
-const NVD_API_BASE = 'https://services.nvd.nist.gov/rest/json/cves/1.0';
-const NVD_API_KEY = process.env.NVD_API_KEY || ''; // Optional API key for higher rate limits
+const NVD_API_BASE = 'https://services.nvd.nist.gov/rest/json/cves/2.0';
+const NVD_API_KEY = process.env.NVD_API_KEY || '';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * Fetch CVEs from NVD API with pagination
- * @param {number} startIndex - Starting index (0-based)
- * @param {number} resultsPerPage - Results per page (max 100)
- */
-const fetchCVEsFromNVD = async (startIndex = 0, resultsPerPage = 50) => {
-  try {
-    const params = {
-      startIndex,
-      resultsPerPage: Math.min(resultsPerPage, 100)
-    };
-
-    if (NVD_API_KEY) {
-      params.apiKey = NVD_API_KEY;
-    }
-
-    console.log(`Fetching CVEs from NVD API (index: ${startIndex})...`);
-
-    const response = await axios.get(NVD_API_BASE, { 
-      params,
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'CVEarity/1.0'
-      }
-    });
-
-    if (response.data && response.data.result && response.data.result.CVE_Items) {
-      const cves = response.data.result.CVE_Items.map(item => ({
-        cveId: item.cve.CVE_data_meta?.ID || 'UNKNOWN',
-        title: item.cve.description?.description_data?.[0]?.value || 'No description',
-        description: item.cve.description?.description_data?.[0]?.value || 'No description available',
-        severity: parseSeverity(item),
-        severityScore: parseScore(item),
-        affectedSoftware: parseAffectedSoftware(item),
-        publishedDate: item.publishedDate || new Date().toISOString(),
-        lastModified: item.lastModifiedDate || new Date().toISOString(),
-        referenceUrls: parseReferences(item)
-      }));
-
-      return cves; // Return just the array
-    }
-
-    return []; // Return empty array on no results
-  } catch (error) {
-    console.error('NVD API Error:', error.message);
-    if (error.response?.status === 403) {
-      console.log('⚠️  Rate limited or authentication failed. Add NVD_API_KEY to .env for higher limits');
-    }
-    return []; // Return empty array on error
-  }
+// In v2.0 the API key goes in the request header, not a query param
+const buildHeaders = () => {
+  const headers = { 'User-Agent': 'CVEarity/1.0' };
+  if (NVD_API_KEY) headers['apiKey'] = NVD_API_KEY;
+  return headers;
 };
 
 /**
- * Parse severity from NVD data
+ * Parse severity from NVD v2.0 metrics
  */
-const parseSeverity = (cveItem) => {
+const parseSeverity = (cve) => {
   try {
-    const impact = cveItem.impact?.baseMetricV3 || cveItem.impact?.baseMetricV2;
-    if (!impact) return 'unknown';
-
-    const score = impact.cvssV3?.baseSeverity || impact.cvssV2?.severity;
-    
-    if (!score) return 'unknown';
-    
-    return score.toLowerCase();
+    const v31 = cve.metrics?.cvssMetricV31?.[0]?.cvssData?.baseSeverity;
+    const v30 = cve.metrics?.cvssMetricV30?.[0]?.cvssData?.baseSeverity;
+    const v2  = cve.metrics?.cvssMetricV2?.[0]?.baseSeverity;
+    const score = v31 || v30 || v2;
+    return score ? score.toLowerCase() : 'unknown';
   } catch (e) {
     return 'unknown';
   }
 };
 
 /**
- * Parse CVSS score
+ * Parse CVSS base score from NVD v2.0 metrics
  */
-const parseScore = (cveItem) => {
+const parseScore = (cve) => {
   try {
-    const score = cveItem.impact?.baseMetricV3?.cvssV3?.baseScore ||
-                  cveItem.impact?.baseMetricV2?.cvssV2?.baseScore ||
-                  0;
-    return parseFloat(score);
+    const v31 = cve.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore;
+    const v30 = cve.metrics?.cvssMetricV30?.[0]?.cvssData?.baseScore;
+    const v2  = cve.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore;
+    return parseFloat(v31 ?? v30 ?? v2 ?? 0);
   } catch (e) {
     return 0;
   }
 };
 
 /**
- * Parse affected software/products
+ * Parse affected software from NVD v2.0 configurations
  */
-const parseAffectedSoftware = (cveItem) => {
+const parseAffectedSoftware = (cve) => {
   try {
     const products = [];
-    const configurations = cveItem.configurations?.nodes || [];
-    
-    configurations.forEach(node => {
-      if (node.cpe_match) {
-        node.cpe_match.forEach(match => {
-          const cpe = match.cpe23Uri || match.cpe22Uri || '';
-          if (cpe) {
-            const parts = cpe.split(':');
-            if (parts.length > 4) {
-              const vendor = parts[3];
-              const product = parts[4];
-              if (vendor && product) {
-                products.push(`${vendor}/${product}`);
-              }
+    const configs = cve.configurations || [];
+
+    configs.forEach(config => {
+      (config.nodes || []).forEach(node => {
+        (node.cpeMatch || []).forEach(match => {
+          const cpe = match.criteria || '';
+          // CPE 2.3 format: cpe:2.3:a:<vendor>:<product>:...
+          const parts = cpe.split(':');
+          if (parts.length > 4) {
+            const vendor = parts[3];
+            const product = parts[4];
+            if (vendor && product && vendor !== '*') {
+              products.push(`${vendor}/${product}`);
             }
           }
         });
-      }
+      });
     });
 
-    // Remove duplicates
     return [...new Set(products)];
   } catch (e) {
     return [];
@@ -129,24 +79,66 @@ const parseAffectedSoftware = (cveItem) => {
 };
 
 /**
- * Parse references
+ * Parse references from NVD v2.0
  */
-const parseReferences = (cveItem) => {
+const parseReferences = (cve) => {
   try {
-    const refs = [];
-    const referenceData = cveItem.cve?.references?.reference_data || [];
-    
-    referenceData.forEach(ref => {
-      if (ref.url) {
-        refs.push({
-          url: ref.url,
-          source: ref.source || 'External'
-        });
-      }
+    return (cve.references || []).map(ref => ({
+      url: ref.url,
+      source: ref.source || 'External'
+    }));
+  } catch (e) {
+    return [];
+  }
+};
+
+/**
+ * Map a NVD v2.0 vulnerability object to our internal format
+ */
+const mapVulnerability = (vuln) => {
+  const cve = vuln.cve;
+  const enDesc = (cve.descriptions || []).find(d => d.lang === 'en');
+  const description = enDesc?.value || 'No description available';
+
+  return {
+    cveId: cve.id,
+    title: description.length > 120 ? description.substring(0, 117) + '...' : description,
+    description,
+    severity: parseSeverity(cve),
+    severityScore: parseScore(cve),
+    affectedSoftware: parseAffectedSoftware(cve),
+    publishedDate: cve.published || new Date().toISOString(),
+    lastModified: cve.lastModified || new Date().toISOString(),
+    referenceUrls: parseReferences(cve)
+  };
+};
+
+/**
+ * Fetch CVEs from NVD API v2.0 with pagination
+ */
+const fetchCVEsFromNVD = async (startIndex = 0, resultsPerPage = 50) => {
+  try {
+    console.log(`Fetching CVEs from NVD API v2.0 (index: ${startIndex})...`);
+
+    const response = await axios.get(NVD_API_BASE, {
+      params: {
+        startIndex,
+        resultsPerPage: Math.min(resultsPerPage, 2000)
+      },
+      headers: buildHeaders(),
+      timeout: 15000
     });
 
-    return refs;
-  } catch (e) {
+    if (response.data?.vulnerabilities) {
+      return response.data.vulnerabilities.map(mapVulnerability);
+    }
+
+    return [];
+  } catch (error) {
+    console.error('NVD API v2.0 Error:', error.message);
+    if (error.response?.status === 403) {
+      console.log('⚠️  Rate limited or authentication failed. Add NVD_API_KEY to .env for higher limits');
+    }
     return [];
   }
 };
@@ -156,41 +148,21 @@ const parseReferences = (cveItem) => {
  */
 const fetchRecentCVEs = async () => {
   try {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    const params = {
-      resultsPerPage: 100,
-      startIndex: 0
-    };
+    // NVD v2.0 date format: 2023-01-01T00:00:00.000
+    const pubStartDate = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      .toISOString()
+      .replace('Z', '');
 
-    if (NVD_API_KEY) {
-      params.apiKey = NVD_API_KEY;
-    }
-
-    console.log('Fetching recent CVEs from NVD API...');
+    console.log('Fetching recent CVEs from NVD API v2.0...');
 
     const response = await axios.get(NVD_API_BASE, {
-      params,
-      timeout: 10000
+      params: { resultsPerPage: 100, startIndex: 0, pubStartDate },
+      headers: buildHeaders(),
+      timeout: 15000
     });
 
-    if (response.data?.result?.CVE_Items) {
-      const recentCVEs = response.data.result.CVE_Items
-        .slice(0, 20)
-        .map(item => ({
-          cveId: item.cve.CVE_data_meta?.ID || 'UNKNOWN',
-          title: item.cve.description?.description_data?.[0]?.value || 'No description',
-          description: item.cve.description?.description_data?.[0]?.value || 'No description',
-          severity: parseSeverity(item),
-          severityScore: parseScore(item),
-          affectedSoftware: parseAffectedSoftware(item),
-          publishedDate: item.publishedDate,
-          lastModified: item.lastModifiedDate || new Date().toISOString(),
-          referenceUrls: parseReferences(item)
-        }));
-
-      return recentCVEs;
+    if (response.data?.vulnerabilities) {
+      return response.data.vulnerabilities.slice(0, 20).map(mapVulnerability);
     }
 
     return [];
@@ -201,7 +173,7 @@ const fetchRecentCVEs = async () => {
 };
 
 /**
- * Search CVEs by keyword (requires API key for better results)
+ * Search CVEs by keyword
  */
 const searchCVEsByKeyword = async (keyword) => {
   try {
@@ -211,26 +183,14 @@ const searchCVEsByKeyword = async (keyword) => {
       params: {
         resultsPerPage: 50,
         startIndex: 0,
-        keyword: keyword,
-        ...(NVD_API_KEY && { apiKey: NVD_API_KEY })
+        keywordSearch: keyword   // v2.0 uses keywordSearch (not keyword)
       },
-      timeout: 10000
+      headers: buildHeaders(),
+      timeout: 15000
     });
 
-    if (response.data?.result?.CVE_Items) {
-      const results = response.data.result.CVE_Items.map(item => ({
-        cveId: item.cve.CVE_data_meta?.ID || 'UNKNOWN',
-        title: item.cve.description?.description_data?.[0]?.value || 'No description',
-        description: item.cve.description?.description_data?.[0]?.value || 'No description',
-        severity: parseSeverity(item),
-        severityScore: parseScore(item),
-        affectedSoftware: parseAffectedSoftware(item),
-        publishedDate: item.publishedDate,
-        lastModified: item.lastModifiedDate || new Date().toISOString(),
-        referenceUrls: parseReferences(item)
-      }));
-
-      return results;
+    if (response.data?.vulnerabilities) {
+      return response.data.vulnerabilities.map(mapVulnerability);
     }
 
     return [];

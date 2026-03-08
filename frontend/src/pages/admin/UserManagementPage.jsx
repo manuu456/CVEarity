@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { GlassmorphCard, LoadingSkeleton, ErrorAlert } from '../../components/common';
+import { SeverityBadge, LoadingSkeleton } from '../../components/common';
 
 export const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
@@ -37,8 +37,8 @@ export const UserManagementPage = () => {
   };
 
   const filteredUsers = users.filter(user =>
-    user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    (user.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEditClick = (user) => {
@@ -89,175 +89,174 @@ export const UserManagementPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pt-20 pb-12 px-4">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <LoadingSkeleton className="h-12 w-80" />
-          <LoadingSkeleton className="h-64 w-full" />
+      <div className="min-h-screen bg-page py-10 px-4 transition-theme">
+        <div className="max-w-6xl mx-auto space-y-8">
+          <LoadingSkeleton className="h-10 w-80 rounded-xl" />
+          <LoadingSkeleton className="h-64 w-full rounded-2xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pt-20 pb-12 px-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold text-white mb-2 text-glow">User Management</h1>
-          <p className="text-gray-400">Manage user accounts, roles, and permissions</p>
+    <div className="min-h-screen bg-page py-10 px-4 transition-theme">
+      <div className="max-w-6xl mx-auto space-y-10">
+        {/* Header Area */}
+        <div className="border-b border-subtle pb-8">
+          <div className="flex items-center gap-4 mb-3">
+            <h1 className="text-4xl font-black text-main tracking-tight uppercase">Identity & Access</h1>
+            <span className="px-3 py-1 bg-main text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg">Management</span>
+          </div>
+          <p className="text-muted text-sm font-medium italic opacity-80">Control institutional access levels, authentication states, and organizational mapping.</p>
         </div>
 
-        {error && <ErrorAlert message={error} />}
+        {error && (
+          <div className="bg-red-500/10 border-l-4 border-red-500 p-5 rounded-xl text-red-500 text-xs font-bold shadow-sm transition-theme">
+            {error}
+          </div>
+        )}
 
-        {/* Search Bar */}
-        <GlassmorphCard className="p-6">
-          <input
-            type="text"
-            placeholder="Search by username or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
-          />
-        </GlassmorphCard>
+        {/* Global Search & Filtration */}
+        <div className="bg-card border border-subtle rounded-3xl p-8 shadow-sm transition-theme">
+           <div className="relative group">
+              <input
+                type="text"
+                placeholder="Query by Identity (Username) or Electronic Mail Address..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-14 pr-6 py-5 bg-page border border-subtle rounded-2xl text-sm text-main font-bold placeholder-muted/40 focus:outline-none focus:ring-2 focus:ring-main/20 transition-all shadow-inner"
+              />
+              <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-muted group-focus-within:text-main transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+           </div>
+        </div>
 
-        {/* Users Table */}
-        <GlassmorphCard className="p-6">
-          <h2 className="text-xl font-bold text-white mb-6">Users ({filteredUsers.length})</h2>
+        {/* Directory Listing */}
+        <div className="bg-card border border-subtle rounded-3xl shadow-sm overflow-hidden transition-theme">
+          <div className="px-8 py-6 border-b border-subtle bg-page/5 flex items-center justify-between">
+            <h2 className="text-main font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full bg-main animate-pulse"></span>
+              Global Identity Directory ({filteredUsers.length})
+            </h2>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-cyan-500/20">
-                  <th className="text-left py-3 px-4 text-cyan-400 font-semibold">Username</th>
-                  <th className="text-left py-3 px-4 text-cyan-400 font-semibold">Email</th>
-                  <th className="text-left py-3 px-4 text-cyan-400 font-semibold">Role</th>
-                  <th className="text-left py-3 px-4 text-cyan-400 font-semibold">Status</th>
-                  <th className="text-left py-3 px-4 text-cyan-400 font-semibold">Created</th>
-                  <th className="text-left py-3 px-4 text-cyan-400 font-semibold">Actions</th>
+            <table className="w-full text-left">
+              <thead className="bg-page/50">
+                <tr>
+                  {['Institutional Identity', 'Communication Endpoint', 'Authorization Role', 'Verification', 'Operational Controls'].map(h => (
+                    <th key={h} className="py-5 px-8 text-main font-black text-[9px] uppercase tracking-widest opacity-60">{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody>
-                {filteredUsers.map(user => (
-                  <tr key={user.id} className="border-b border-cyan-500/10 hover:bg-slate-700/20 transition">
-                    <td className="py-3 px-4 text-white font-medium">{user.username}</td>
-                    <td className="py-3 px-4 text-gray-300 text-sm">{user.email}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        user.role === 'admin'
-                          ? 'bg-red-500/20 text-red-400'
-                          : user.role === 'customer_care'
-                          ? 'bg-purple-500/20 text-purple-400'
-                          : 'bg-blue-500/20 text-blue-400'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`w-2 h-2 rounded-full inline-block ${
-                        user.isActive === undefined ? (user.is_active ? 'bg-green-400' : 'bg-red-400') : (user.isActive ? 'bg-green-400' : 'bg-red-400')
-                      }`} />
-                      <span className="ml-2 text-sm text-gray-300">
-                        {user.isActive === undefined ? (user.is_active ? 'Active' : 'Inactive') : (user.isActive ? 'Active' : 'Inactive')}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-gray-400 text-sm">
-                      {new Date(user.createdAt || user.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 px-4">
-                      <button
-                        onClick={() => handleEditClick(user)}
-                        className="text-cyan-400 hover:text-cyan-300 mr-4 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleToggleStatus(user.id, user.isActive === undefined ? user.is_active : user.isActive)}
-                        className="text-yellow-400 hover:text-yellow-300 transition-colors"
-                      >
-                        {(user.isActive === undefined ? user.is_active : user.isActive) ? 'Deactivate' : 'Activate'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-subtle">
+                {filteredUsers.map(user => {
+                  const isActive = user.isActive === undefined ? user.is_active : user.isActive;
+                  return (
+                    <tr key={user.id} className="hover:bg-page transition-all group">
+                      <td className="py-6 px-8 text-main font-black text-sm group-hover:translate-x-1 transition-transform">{user.username}</td>
+                      <td className="py-6 px-8 text-muted text-xs font-bold italic">{user.email}</td>
+                      <td className="py-6 px-8">
+                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border transition-theme ${
+                          user.role === 'admin' 
+                            ? 'bg-red-500/10 border-red-500/20 text-red-500' 
+                            : user.role === 'customer_care'
+                            ? 'bg-purple-500/10 border-purple-500/20 text-purple-600'
+                            : 'bg-main/5 border-subtle text-main'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="py-6 px-8">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2.5 h-2.5 rounded-full shadow-sm animate-pulse ${isActive ? 'bg-green-500' : 'bg-red-500'}`} />
+                          <span className="text-[10px] font-black text-main uppercase tracking-widest opacity-80">{isActive ? 'Authorized' : 'Unauthorized'}</span>
+                        </div>
+                      </td>
+                      <td className="py-6 px-8 text-right space-x-6">
+                        <button
+                          onClick={() => handleEditClick(user)}
+                          className="text-[9px] font-black text-main uppercase tracking-widest border-b-2 border-transparent hover:border-main transition-all"
+                        >
+                          Modify Policy
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(user.id, isActive)}
+                          className={`text-[9px] font-black uppercase tracking-widest border-b-2 border-transparent transition-all ${
+                            isActive ? 'text-red-500 hover:border-red-500' : 'text-green-500 hover:border-green-500'
+                          }`}
+                        >
+                          {isActive ? 'Revoke Session' : 'Grant Session'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        </GlassmorphCard>
+        </div>
 
-        {/* Edit User Modal */}
+        {/* Policy Modification Interface (Modal) */}
         {editingUser && (
-          <GlassmorphCard className="p-8 fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-            <div className="bg-slate-900 rounded-lg p-8 max-w-md w-full border border-cyan-500/20">
-              <h2 className="text-2xl font-bold text-white mb-6">Edit User</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-gray-400 text-sm mb-2 block">First Name</label>
-                  <input
-                    type="text"
-                    value={formData.firstName}
-                    onChange={(e) => handleFormChange('firstName', e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white"
-                  />
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4 transition-all animate-fade-in">
+             <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setEditingUser(null)} />
+             <div className="bg-card border border-subtle rounded-3xl shadow-2xl max-w-lg w-full relative z-10 overflow-hidden transition-theme">
+                <div className="bg-page/10 px-10 py-8 border-b border-subtle">
+                   <h2 className="text-main font-black text-xl uppercase tracking-tight">Identity Parameter Override</h2>
+                   <p className="text-muted text-[9px] font-black uppercase tracking-[0.2em] mt-2 opacity-60">Manual security posture adjustment</p>
                 </div>
-                <div>
-                  <label className="text-gray-400 text-sm mb-2 block">Last Name</label>
-                  <input
-                    type="text"
-                    value={formData.lastName}
-                    onChange={(e) => handleFormChange('lastName', e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-gray-400 text-sm mb-2 block">Company</label>
-                  <input
-                    type="text"
-                    value={formData.company}
-                    onChange={(e) => handleFormChange('company', e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-gray-400 text-sm mb-2 block">Role</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => handleFormChange('role', e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-800/50 border border-cyan-500/20 rounded-lg text-white"
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="customer_care">Customer Care</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="flex items-center text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={formData.isActive}
-                      onChange={(e) => handleFormChange('isActive', e.target.checked)}
-                      className="mr-2 w-4 h-4"
-                    />
-                    Active
-                  </label>
-                </div>
-              </div>
+                
+                <div className="p-10 space-y-8">
+                   <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="text-muted text-[9px] font-black uppercase tracking-widest block mb-2 opacity-60">First Descriptor</label>
+                        <input type="text" value={formData.firstName} onChange={(e) => handleFormChange('firstName', e.target.value)}
+                          className="w-full px-5 py-3 bg-page border border-subtle rounded-xl text-sm text-main font-bold focus:outline-none focus:ring-2 focus:ring-main/20 shadow-inner" />
+                      </div>
+                      <div>
+                        <label className="text-muted text-[9px] font-black uppercase tracking-widest block mb-2 opacity-60">Final Descriptor</label>
+                        <input type="text" value={formData.lastName} onChange={(e) => handleFormChange('lastName', e.target.value)}
+                          className="w-full px-5 py-3 bg-page border border-subtle rounded-xl text-sm text-main font-bold focus:outline-none focus:ring-2 focus:ring-main/20 shadow-inner" />
+                      </div>
+                   </div>
+                   
+                   <div>
+                    <label className="text-muted text-[9px] font-black uppercase tracking-widest block mb-2 opacity-60">Institutional Mapping (Company)</label>
+                    <input type="text" value={formData.company} onChange={(e) => handleFormChange('company', e.target.value)}
+                      className="w-full px-5 py-3 bg-page border border-subtle rounded-xl text-sm text-main font-bold focus:outline-none focus:ring-2 focus:ring-main/20 shadow-inner" />
+                   </div>
 
-              <div className="flex gap-4 mt-6">
-                <button
-                  onClick={handleSaveUser}
-                  className="flex-1 px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-400 rounded-lg transition-colors"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setEditingUser(null)}
-                  className="flex-1 px-4 py-2 bg-slate-700/20 hover:bg-slate-700/30 border border-slate-500/50 text-gray-300 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </GlassmorphCard>
+                   <div>
+                    <label className="text-muted text-[9px] font-black uppercase tracking-widest block mb-2 opacity-60">Authorization Tier</label>
+                    <select value={formData.role} onChange={(e) => handleFormChange('role', e.target.value)}
+                      className="w-full px-5 py-3 bg-page border border-subtle rounded-xl text-sm text-main font-black uppercase focus:outline-none focus:ring-2 focus:ring-main/20 shadow-inner appearance-none">
+                      <option value="user">Standard Agent</option>
+                      <option value="admin">Institutional Administrator</option>
+                      <option value="customer_care">Deployment Support</option>
+                    </select>
+                   </div>
+
+                   <div className="flex items-center gap-4 p-5 bg-page border border-subtle rounded-2xl shadow-inner group cursor-pointer" onClick={() => handleFormChange('isActive', !formData.isActive)}>
+                      <div className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center ${formData.isActive ? 'bg-main border-main text-white' : 'bg-transparent border-subtle'}`}>
+                        {formData.isActive && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                      <label className="text-main text-[10px] font-black uppercase tracking-widest cursor-pointer select-none">Verify Identity Credentials (Active)</label>
+                   </div>
+                </div>
+
+                <div className="px-10 py-8 bg-page/10 border-t border-subtle flex gap-4">
+                   <button onClick={handleSaveUser}
+                    className="flex-1 tenable-btn-primary py-4 text-[10px] tracking-[0.2em] uppercase">
+                    Commit Changes
+                   </button>
+                   <button onClick={() => setEditingUser(null)}
+                    className="tenable-btn-secondary px-8 py-4 text-[10px] tracking-[0.2em] uppercase">
+                    Abort
+                   </button>
+                </div>
+             </div>
+          </div>
         )}
       </div>
     </div>

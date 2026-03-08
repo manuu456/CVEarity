@@ -6,9 +6,7 @@
 const cron = require('node-cron');
 const cveSync = require('../controllers/cveSync');
 const emailService = require('../services/emailService');
-
-// Reuse initialized DB from database/init.js
-const { db } = require('../database/init.js');
+const { statements, db: getDb, mapResultToObjects } = require('../database/init.js');
 
 class JobScheduler {
   constructor() {
@@ -53,13 +51,9 @@ class JobScheduler {
           console.log(`✅ [CVE SYNC JOB] ${result.message}`);
 
           // Send alert if critical CVEs found
-          const criticalCVEs = db.prepare(`
-            SELECT * FROM cves WHERE severity = 'critical' 
-            ORDER BY published_date DESC LIMIT 5
-          `).all();
+          const criticalCVEs = statements.getRecentCriticalAlerts.all('critical', 5);
 
           if (criticalCVEs.length > 0) {
-            // Notify admins about critical CVEs
             await this.notifyAdminsAboutCritical(criticalCVEs);
           }
         } else {
@@ -83,20 +77,19 @@ class JobScheduler {
     const job = cron.schedule('0 9 * * 1', async () => {
       console.log('\n⏰ [WEEKLY REPORT JOB] Generating weekly reports...');
       try {
-        // Get all admin users
-        const admins = db.prepare(`
-          SELECT * FROM users WHERE role = 'admin'
-        `).all();
+        const admins = statements.getAllUsers.all().filter(u => u.role === 'admin');
 
         for (const admin of admins) {
-          const stats = db.prepare(`
-            SELECT 
+          const statsResult = getDb().exec(`
+            SELECT
               COUNT(*) as totalCVEs,
               SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as criticalCount,
               SUM(CASE WHEN severity = 'high' THEN 1 ELSE 0 END) as highCount,
               SUM(CASE WHEN published_date >= datetime('now', '-7 days') THEN 1 ELSE 0 END) as newThisWeek
             FROM cves
-          `).get();
+          `);
+          const statsRows = mapResultToObjects(statsResult);
+          const stats = statsRows[0] || {};
 
           if (admin.email) {
             const result = await emailService.sendWeeklyReport(admin.email, {
@@ -148,9 +141,7 @@ class JobScheduler {
    */
   async notifyAdminsAboutCritical(criticalCVEs) {
     try {
-      const admins = db.prepare(`
-        SELECT * FROM users WHERE role = 'admin'
-      `).all();
+      const admins = statements.getAllUsers.all().filter(u => u.role === 'admin');
 
       for (const admin of admins) {
         if (admin.email) {

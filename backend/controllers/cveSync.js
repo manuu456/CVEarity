@@ -4,9 +4,19 @@
  */
 
 const nvdService = require('../services/nvdService');
+const { db: getDb, saveDatabase, mapResultToObjects } = require('../database/init.js');
 
-// Reuse initialized DB from database/init.js
-const { db } = require('../database/init.js');
+// Helper: fetch a single row via sql.js exec()
+const queryOne = (sql, params = []) => {
+  const result = getDb().exec(sql, params);
+  if (!result || result.length === 0) return null;
+  const cols = result[0].columns;
+  const row = result[0].values[0];
+  if (!row) return null;
+  const obj = {};
+  cols.forEach((c, i) => { obj[c] = row[i]; });
+  return obj;
+};
 
 /**
  * Sync CVEs from NVD API
@@ -39,15 +49,11 @@ const syncCVEsFromNVD = async (options = {}) => {
       // Process each CVE
       for (const cve of cves) {
         try {
-          // Check if CVE already exists
-          const existing = db.prepare(
-            'SELECT id FROM cves WHERE cve_id = ?'
-          ).get(cve.cveId);
+          const existing = queryOne('SELECT id FROM cves WHERE cve_id = ?', [cve.cveId]);
 
           if (existing) {
             if (updateExisting) {
-              // Update existing CVE
-              db.prepare(`
+              getDb().run(`
                 UPDATE cves SET
                   title = ?,
                   description = ?,
@@ -58,7 +64,7 @@ const syncCVEsFromNVD = async (options = {}) => {
                   last_modified = ?,
                   reference_urls = ?
                 WHERE cve_id = ?
-              `).run(
+              `, [
                 cve.title,
                 cve.description,
                 cve.severity,
@@ -68,19 +74,18 @@ const syncCVEsFromNVD = async (options = {}) => {
                 cve.lastModified,
                 JSON.stringify(cve.referenceUrls || []),
                 cve.cveId
-              );
+              ]);
               updated++;
             } else {
               skipped++;
             }
           } else {
-            // Insert new CVE
-            db.prepare(`
+            getDb().run(`
               INSERT INTO cves (
                 cve_id, title, description, severity, severity_score,
                 affected_software, published_date, last_modified, reference_urls
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
+            `, [
               cve.cveId,
               cve.title,
               cve.description,
@@ -90,13 +95,15 @@ const syncCVEsFromNVD = async (options = {}) => {
               cve.publishedDate,
               cve.lastModified,
               JSON.stringify(cve.referenceUrls || [])
-            );
+            ]);
             synced++;
           }
         } catch (error) {
           console.error(`❌ Error processing ${cve.cveId}:`, error.message);
         }
       }
+
+      saveDatabase();
 
       // Check if we've reached the max results
       if (synced >= maxResults || cves.length < resultsPerPage) {
@@ -133,8 +140,6 @@ const syncCVEsFromNVD = async (options = {}) => {
  */
 const searchAndSyncCVEs = async (keyword, options = {}) => {
   try {
-    const { resultsPerPage = 50 } = options;
-
     console.log(`🔍 Searching CVEs for keyword: "${keyword}"...`);
 
     const cves = await nvdService.searchCVEsByKeyword(keyword);
@@ -149,20 +154,17 @@ const searchAndSyncCVEs = async (keyword, options = {}) => {
 
     let synced = 0;
 
-    // Store in database
     for (const cve of cves) {
       try {
-        const existing = db.prepare(
-          'SELECT id FROM cves WHERE cve_id = ?'
-        ).get(cve.cveId);
+        const existing = queryOne('SELECT id FROM cves WHERE cve_id = ?', [cve.cveId]);
 
         if (!existing) {
-          db.prepare(`
+          getDb().run(`
             INSERT INTO cves (
               cve_id, title, description, severity, severity_score,
               affected_software, published_date, last_modified, reference_urls
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
+          `, [
             cve.cveId,
             cve.title,
             cve.description,
@@ -172,13 +174,15 @@ const searchAndSyncCVEs = async (keyword, options = {}) => {
             cve.publishedDate,
             cve.lastModified,
             JSON.stringify(cve.referenceUrls || [])
-          );
+          ]);
           synced++;
         }
       } catch (error) {
         console.error(`Error storing ${cve.cveId}:`, error.message);
       }
     }
+
+    saveDatabase();
 
     return {
       success: true,
@@ -201,8 +205,8 @@ const searchAndSyncCVEs = async (keyword, options = {}) => {
  */
 const getSyncStats = () => {
   try {
-    const cveStats = db.prepare(`
-      SELECT 
+    const cveStats = queryOne(`
+      SELECT
         COUNT(*) as total,
         COUNT(CASE WHEN severity = 'critical' THEN 1 END) as critical,
         COUNT(CASE WHEN severity = 'high' THEN 1 END) as high,
@@ -212,23 +216,23 @@ const getSyncStats = () => {
         MAX(published_date) as newest,
         MAX(updated_at) as lastSync
       FROM cves
-    `).get();
+    `);
 
     return {
       success: true,
       stats: {
-        totalCVEs: cveStats.total || 0,
+        totalCVEs: cveStats?.total || 0,
         bySeverity: {
-          critical: cveStats.critical || 0,
-          high: cveStats.high || 0,
-          medium: cveStats.medium || 0,
-          low: cveStats.low || 0
+          critical: cveStats?.critical || 0,
+          high: cveStats?.high || 0,
+          medium: cveStats?.medium || 0,
+          low: cveStats?.low || 0
         },
         dateRange: {
-          oldest: cveStats.oldest,
-          newest: cveStats.newest
+          oldest: cveStats?.oldest,
+          newest: cveStats?.newest
         },
-        lastSync: cveStats.lastSync
+        lastSync: cveStats?.lastSync
       }
     };
   } catch (error) {
@@ -245,15 +249,23 @@ const getSyncStats = () => {
  */
 const cleanupOldCVEs = (retentionDays = 90) => {
   try {
-    const result = db.prepare(`
-      DELETE FROM cves 
-      WHERE published_date < datetime('now', ? || ' days')
-    `).run(-retentionDays);
+    // Count rows to be deleted first (sql.js has no .changes property on run())
+    const countResult = queryOne(
+      `SELECT COUNT(*) as count FROM cves WHERE published_date < datetime('now', ? || ' days')`,
+      [String(-retentionDays)]
+    );
+    const deleted = countResult?.count || 0;
+
+    getDb().run(
+      `DELETE FROM cves WHERE published_date < datetime('now', ? || ' days')`,
+      [String(-retentionDays)]
+    );
+    saveDatabase();
 
     return {
       success: true,
-      deleted: result.changes,
-      message: `Deleted ${result.changes} CVEs older than ${retentionDays} days`
+      deleted,
+      message: `Deleted ${deleted} CVEs older than ${retentionDays} days`
     };
   } catch (error) {
     console.error('Error cleaning up CVEs:', error);

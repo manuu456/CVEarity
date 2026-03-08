@@ -184,8 +184,11 @@ router.get('/profile', authenticate, (req, res) => {
         role: req.user.role,
         firstName: req.user.first_name,
         lastName: req.user.last_name,
+        first_name: req.user.first_name,
+        last_name: req.user.last_name,
         company: req.user.company,
-        createdAt: req.user.created_at
+        createdAt: req.user.created_at,
+        mfa_enabled: !!req.user.mfa_enabled
       }
     }
   });
@@ -383,25 +386,6 @@ router.post('/mfa/disable', authenticate, (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to disable MFA' });
   }
-});
-
-// Get profile endpoint
-router.get('/profile', authenticate, (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      user: {
-        id: req.user.id,
-        username: req.user.username,
-        email: req.user.email,
-        role: req.user.role,
-        first_name: req.user.first_name,
-        last_name: req.user.last_name,
-        company: req.user.company,
-        mfa_enabled: !!req.user.mfa_enabled
-      }
-    }
-  });
 });
 
 module.exports = router;

@@ -1,7 +1,12 @@
 const jwt = require('jsonwebtoken');
 const { statements } = require('../database/init');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cvearity-secret-key-change-in-production';
+const DEFAULT_JWT_SECRET = 'cvearity-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || DEFAULT_JWT_SECRET;
+
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  WARNING: JWT_SECRET is not set. Using insecure default — set JWT_SECRET in your .env file before deploying to production.');
+}
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 const generateToken = (userId) => {

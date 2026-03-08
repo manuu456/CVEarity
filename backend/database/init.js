@@ -230,6 +230,30 @@ const createTables = () => {
     )
   `);
 
+  // Learn modules table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS learn_modules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_key TEXT UNIQUE NOT NULL,
+      icon TEXT DEFAULT '📚',
+      name TEXT NOT NULL,
+      tagline TEXT,
+      route TEXT,
+      difficulty TEXT DEFAULT 'Beginner',
+      time_to_learn TEXT DEFAULT '3 min',
+      what_text TEXT,
+      why_text TEXT,
+      how_to_use TEXT,
+      tips TEXT,
+      key_terms TEXT,
+      is_active BOOLEAN DEFAULT 1,
+      sort_order INTEGER DEFAULT 0,
+      created_by INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Add MFA columns to users (Feature 10) - safe to run multiple times
   try { db.run('ALTER TABLE users ADD COLUMN mfa_enabled BOOLEAN DEFAULT 0'); } catch(e) {}
   try { db.run('ALTER TABLE users ADD COLUMN mfa_secret TEXT'); } catch(e) {}
@@ -400,9 +424,11 @@ const dbUtils = {
       INSERT INTO users (username, email, password, role, first_name, last_name, company)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [username, email, password, role, first_name, last_name, company]);
-    saveDatabase();
+    // Get rowid BEFORE saveDatabase() — db.export() resets last_insert_rowid() in sql.js
     const res = db.exec('SELECT last_insert_rowid() as id');
-    return { lastInsertRowid: res[0].values[0][0] };
+    const lastInsertRowid = res[0].values[0][0];
+    saveDatabase();
+    return { lastInsertRowid };
   },
 
   updateUser: (id, first_name, last_name, company) => {
@@ -556,7 +582,6 @@ const statements = {
   logActivity: {
     run: (user_id, action, details, ip_address, user_agent) => {
       if (db) {
-        console.log('BINDINGS:', [user_id, action, details, ip_address || null, user_agent || null]);
         db.run(`
           INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent)
           VALUES (?, ?, ?, ?, ?)
