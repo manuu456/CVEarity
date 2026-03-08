@@ -1,0 +1,13 @@
+## 🏗️ System Architecture
+
+The CVEarity platform follows a modern full-stack architecture.
+
+Frontend (React + Vite)
+        |
+        | REST API Requests
+        |
+Backend (Node.js + Express)
+        |
+        | Data Processing
+        |
+Vulnerability Data (CVE Intelligence)
