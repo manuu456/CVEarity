@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { LoadingSkeleton } from '../components/common';
 
+const RATE_LIMIT_OPTIONS = [50, 100, 250, 500, 1000];
+const DEFAULT_RATE_LIMIT = 100;
+
 const S = {
   page: { minHeight: '100vh', background: '#050505', paddingTop: '96px', paddingBottom: '48px', paddingLeft: '24px', paddingRight: '24px' },
   wrap: { maxWidth: '896px', margin: '0 auto' },
@@ -12,10 +15,12 @@ const S = {
   btnRed: { padding: '10px 24px', background: '#E53E3E', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.15em', cursor: 'pointer' },
   card: { background: '#0f0f0f', border: '1px solid #1f1f1f', borderRadius: '12px', padding: '32px', marginBottom: '32px', position: 'relative', overflow: 'hidden' },
   input: { flex: 1, padding: '10px 16px', background: '#050505', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: '500', outline: 'none' },
+  select: { padding: '10px 16px', background: '#050505', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: '500', outline: 'none', cursor: 'pointer' },
   btnGreen: { padding: '10px 32px', background: 'transparent', color: '#22C55E', border: '2px solid #22C55E', borderRadius: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' },
-  keyRow: { padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1a1a1a' },
+  keyRow: { padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1a1a1a', gap: '12px', flexWrap: 'wrap' },
   mono: { fontFamily: 'monospace', fontSize: '11px', color: '#9ca3af' },
   getBadge: { padding: '2px 6px', background: '#1e3a5f', color: '#60a5fa', fontSize: '9px', fontWeight: '700', borderRadius: '3px' },
+  rateBadge: { padding: '2px 7px', background: '#1a2a1a', border: '1px solid rgba(34,197,94,0.25)', color: '#22C55E', fontSize: '10px', fontWeight: '700', borderRadius: '4px', letterSpacing: '0.03em' },
   codeBg: { background: '#000', border: '1px solid #1f1f1f', borderRadius: '8px', padding: '16px', fontFamily: 'monospace', fontSize: '12px', color: '#22C55E', overflowX: 'auto' },
 };
 
@@ -23,8 +28,11 @@ export const DeveloperPage = () => {
   const [keys, setKeys] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [keyName, setKeyName] = useState('');
+  const [rateLimit, setRateLimit] = useState(DEFAULT_RATE_LIMIT);
   const [newKey, setNewKey] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editingRateId, setEditingRateId] = useState(null);
+  const [editingRateValue, setEditingRateValue] = useState(DEFAULT_RATE_LIMIT);
 
   useEffect(() => { fetchKeys(); }, []);
 
@@ -36,9 +44,10 @@ export const DeveloperPage = () => {
   const generateKey = async (e) => {
     e.preventDefault();
     try {
-      const r = await api.post('/developer/keys', { key_name: keyName });
+      const r = await api.post('/developer/keys', { key_name: keyName, rate_limit: rateLimit });
       setNewKey(r.data.data?.api_key);
       setKeyName('');
+      setRateLimit(DEFAULT_RATE_LIMIT);
       setShowForm(false);
       fetchKeys();
     } catch (e) {}
@@ -46,6 +55,19 @@ export const DeveloperPage = () => {
 
   const revokeKey = async (id) => {
     try { await api.delete(`/developer/keys/${id}`); fetchKeys(); } catch (e) {}
+  };
+
+  const startEditRate = (key) => {
+    setEditingRateId(key.id);
+    setEditingRateValue(key.rate_limit || DEFAULT_RATE_LIMIT);
+  };
+
+  const saveRateLimit = async (id) => {
+    try {
+      await api.patch(`/developer/keys/${id}/rate-limit`, { rate_limit: editingRateValue });
+      setEditingRateId(null);
+      fetchKeys();
+    } catch (e) {}
   };
 
   const copyKey = (key) => navigator.clipboard.writeText(key);
@@ -106,7 +128,7 @@ export const DeveloperPage = () => {
             <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', background: '#E53E3E' }} />
             <div style={{ paddingLeft: '12px' }}>
               <h3 style={{ color: '#fff', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '20px' }}>New API Key</h3>
-              <form onSubmit={generateKey} style={{ display: 'flex', gap: '12px' }}>
+              <form onSubmit={generateKey} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 <input
                   type="text"
                   placeholder="Key name (e.g. Jenkins CI)"
@@ -115,6 +137,16 @@ export const DeveloperPage = () => {
                   style={S.input}
                   required
                 />
+                <select
+                  value={rateLimit}
+                  onChange={e => setRateLimit(Number(e.target.value))}
+                  style={S.select}
+                  title="Requests per hour"
+                >
+                  {RATE_LIMIT_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt} req/hr</option>
+                  ))}
+                </select>
                 <button type="submit" style={S.btnRed}>Generate</button>
               </form>
             </div>
@@ -132,9 +164,9 @@ export const DeveloperPage = () => {
             <div style={{ background: '#0f0f0f', border: '1px solid #1f1f1f', borderRadius: '12px', overflow: 'hidden' }}>
               {keys.map((k, i) => (
                 <div key={k.id} style={{ ...S.keyRow, borderBottom: i < keys.length - 1 ? '1px solid #1a1a1a' : 'none' }}>
-                  <div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ color: '#fff', fontWeight: '700', fontSize: '14px', marginBottom: '4px' }}>{k.key_name}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                       <span style={S.mono}>{k.api_key_preview}</span>
                       <span style={{ color: '#2a2a2a' }}>·</span>
                       <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#9ca3af' }}>{k.permissions}</span>
@@ -142,6 +174,36 @@ export const DeveloperPage = () => {
                       <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: k.is_active ? '#22C55E' : '#ef4444' }}>
                         {k.is_active ? 'Active' : 'Revoked'}
                       </span>
+                      <span style={{ color: '#2a2a2a' }}>·</span>
+                      {editingRateId === k.id ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <select
+                            value={editingRateValue}
+                            onChange={e => setEditingRateValue(Number(e.target.value))}
+                            style={{ ...S.select, padding: '2px 8px', fontSize: '10px' }}
+                          >
+                            {RATE_LIMIT_OPTIONS.map(opt => (
+                              <option key={opt} value={opt}>{opt} req/hr</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => saveRateLimit(k.id)}
+                            style={{ background: 'transparent', border: 'none', color: '#22C55E', fontSize: '10px', fontWeight: '700', cursor: 'pointer', padding: '2px 6px' }}
+                          >Save</button>
+                          <button
+                            onClick={() => setEditingRateId(null)}
+                            style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '10px', fontWeight: '700', cursor: 'pointer', padding: '2px 6px' }}
+                          >Cancel</button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => startEditRate(k)}
+                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                          title="Edit rate limit"
+                        >
+                          <span style={S.rateBadge}>{k.rate_limit || DEFAULT_RATE_LIMIT} req/hr</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                   <button onClick={() => revokeKey(k.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }}>Revoke</button>

@@ -6,6 +6,8 @@ const { db: getDb, saveDatabase, mapResultToObjects } = require('../database/ini
 const router = express.Router();
 router.use(authenticate);
 
+const DEFAULT_RATE_LIMIT = 100;
+
 // GET /api/developer/keys — List user's API keys
 router.get('/keys', (req, res) => {
   try {
@@ -24,24 +26,47 @@ router.get('/keys', (req, res) => {
 // POST /api/developer/keys — Generate new API key
 router.post('/keys', (req, res) => {
   try {
-    const { key_name, permissions } = req.body;
+    const { key_name, permissions, rate_limit } = req.body;
     if (!key_name) return res.status(400).json({ success: false, message: 'key_name is required' });
+
+    const resolvedRateLimit = Number.isInteger(Number(rate_limit)) && Number(rate_limit) > 0
+      ? Number(rate_limit)
+      : DEFAULT_RATE_LIMIT;
 
     const apiKey = 'cvea_' + crypto.randomBytes(32).toString('hex');
     const db = getDb();
     db.run(
-      'INSERT INTO api_keys (user_id, key_name, api_key, permissions) VALUES (?, ?, ?, ?)',
-      [req.user.id, key_name, apiKey, permissions || 'read']
+      'INSERT INTO api_keys (user_id, key_name, api_key, permissions, rate_limit) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, key_name, apiKey, permissions || 'read', resolvedRateLimit]
     );
     saveDatabase();
 
     res.status(201).json({
       success: true,
-      data: { key_name, api_key: apiKey, permissions: permissions || 'read' },
+      data: { key_name, api_key: apiKey, permissions: permissions || 'read', rate_limit: resolvedRateLimit },
       message: 'Save this key now — it will not be shown again'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error generating API key' });
+  }
+});
+
+// PATCH /api/developer/keys/:id/rate-limit — Update rate limit for an API key
+router.patch('/keys/:id/rate-limit', (req, res) => {
+  try {
+    const { rate_limit } = req.body;
+    if (!Number.isInteger(Number(rate_limit)) || Number(rate_limit) <= 0) {
+      return res.status(400).json({ success: false, message: 'rate_limit must be a positive integer' });
+    }
+    const db = getDb();
+    db.run(
+      'UPDATE api_keys SET rate_limit = ? WHERE id = ? AND user_id = ?',
+      [Number(rate_limit), req.params.id, req.user.id]
+    );
+    saveDatabase();
+    res.json({ success: true, message: 'Rate limit updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error updating rate limit' });
   }
 });
 
