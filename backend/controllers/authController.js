@@ -1,7 +1,21 @@
+/**
+ * Authentication controller.
+ *
+ * Handles user login by verifying credentials and issuing a JWT.
+ *
+ * @module controllers/authController
+ */
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { statements } = require('../database/init.js');
 
+/**
+ * Authenticate a user with username and password.
+ *
+ * @param {import('express').Request} req - Must contain `username` and `password` in the body.
+ * @param {import('express').Response} res
+ */
 const login = (req, res) => {
   const { username, password } = req.body;
 

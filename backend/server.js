@@ -1,3 +1,13 @@
+/**
+ * CVEarity Backend Server
+ *
+ * Express application entry point that configures middleware, registers API
+ * routes, and starts the HTTP server.  The app is also exported for use as a
+ * Vercel serverless function.
+ *
+ * @module server
+ */
+
 const express = require('express');
 const cors = require('cors');
 const cveRoutes = require('./routes/cveRoutes.js');

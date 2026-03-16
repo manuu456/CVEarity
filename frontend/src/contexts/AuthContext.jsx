@@ -1,8 +1,22 @@
+/**
+ * Authentication context and provider.
+ *
+ * Manages user authentication state (login, register, logout, token
+ * verification) and exposes it to the component tree via React Context.
+ *
+ * @module contexts/AuthContext
+ */
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext();
 
+/**
+ * Hook to access the authentication context.
+ *
+ * @returns {{ user: Object|null, isAuthenticated: boolean, loading: boolean, login: Function, register: Function, logout: Function, updateProfile: Function, changePassword: Function }}
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -11,6 +25,14 @@ export const useAuth = () => {
   return context;
 };
 
+/**
+ * Provider component that wraps the application and supplies auth state.
+ *
+ * On mount it checks `localStorage` for an existing JWT and attempts to verify
+ * it against the backend.
+ *
+ * @param {{ children: React.ReactNode }} props
+ */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
