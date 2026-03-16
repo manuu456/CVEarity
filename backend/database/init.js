@@ -1,5 +1,5 @@
 /**
- * Database initialisation module.
+ * Database initialization module.
  *
  * Uses sql.js (SQLite compiled to WebAssembly) so the database works in both
  * Node.js and Vercel serverless environments.  On Vercel the bundled seed DB is
@@ -18,13 +18,13 @@ let DB = null;
 let db = null;
 
 /**
- * Initialise the SQLite database (idempotent).
+ * Initialize the SQLite database (idempotent).
  *
  * On the first call it loads the WASM binary, opens (or creates) the database
  * file, creates tables, and persists the result.  Subsequent calls return the
  * existing database instance.
  *
- * @returns {Promise<import('sql.js').Database>} The initialised database.
+ * @returns {Promise<import('sql.js').Database>} The initialized database.
  */
 // Initialize database
 const initDatabase = async () => {

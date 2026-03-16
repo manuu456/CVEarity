@@ -1,8 +1,8 @@
 /**
- * Authentication and authorisation middleware.
+ * Authentication and authorization middleware.
  *
  * Provides JWT token generation, request authentication, role-based
- * authorisation, and a simple in-memory rate limiter.
+ * authorization, and a simple in-memory rate limiter.
  *
  * @module middleware/auth
  */

@@ -1,7 +1,7 @@
 /**
  * Theme context and provider.
  *
- * Manages a dark/light colour scheme toggle and persists the preference in
+ * Manages a dark/light color scheme toggle and persists the preference in
  * `localStorage`.  The site defaults to dark mode.
  *
  * @module contexts/ThemeContext
