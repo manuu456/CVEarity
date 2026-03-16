@@ -1,10 +1,31 @@
+/**
+ * Database initialisation module.
+ *
+ * Uses sql.js (SQLite compiled to WebAssembly) so the database works in both
+ * Node.js and Vercel serverless environments.  On Vercel the bundled seed DB is
+ * copied to `/tmp` on cold start.
+ *
+ * @module database/init
+ */
+
 const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 
+/** @type {import('sql.js').SqlJsStatic | null} */
 let DB = null;
+/** @type {import('sql.js').Database | null} */
 let db = null;
 
+/**
+ * Initialise the SQLite database (idempotent).
+ *
+ * On the first call it loads the WASM binary, opens (or creates) the database
+ * file, creates tables, and persists the result.  Subsequent calls return the
+ * existing database instance.
+ *
+ * @returns {Promise<import('sql.js').Database>} The initialised database.
+ */
 // Initialize database
 const initDatabase = async () => {
   if (DB) return db;
@@ -46,6 +67,12 @@ const initDatabase = async () => {
   return db;
 };
 
+/**
+ * Persist the in-memory database to disk.
+ *
+ * On Vercel the file is written to `/tmp`; locally it is written next to the
+ * source `cvearity.db` seed file.
+ */
 // Save database to file
 const saveDatabase = () => {
   if (db) {
@@ -65,6 +92,9 @@ const saveDatabase = () => {
   }
 };
 
+/**
+ * Create all required tables if they do not already exist.
+ */
 // Create tables
 const createTables = () => {
   if (!db) return;

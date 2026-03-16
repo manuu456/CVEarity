@@ -1,9 +1,23 @@
+/**
+ * Notification context and provider.
+ *
+ * Provides a toast notification system and polls the backend for unread
+ * vulnerability alerts when the user is authenticated.
+ *
+ * @module contexts/NotificationContext
+ */
+
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
 
+/**
+ * Hook to access toast notification helpers and the unread alert count.
+ *
+ * @returns {{ notify: Object, unreadAlerts: number, addToast: Function, removeToast: Function }}
+ */
 export const useNotifications = () => {
   const ctx = useContext(NotificationContext);
   if (!ctx) throw new Error('useNotifications must be used within NotificationProvider');
@@ -12,6 +26,12 @@ export const useNotifications = () => {
 
 let idCounter = 0;
 
+/**
+ * Provider component that renders a fixed-position toast container and polls
+ * for new vulnerability alerts every 60 seconds.
+ *
+ * @param {{ children: React.ReactNode }} props
+ */
 export const NotificationProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [unreadAlerts, setUnreadAlerts] = useState(0);

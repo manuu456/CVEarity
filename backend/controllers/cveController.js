@@ -1,7 +1,23 @@
+/**
+ * CVE controller.
+ *
+ * Provides route handlers for listing, filtering, searching CVEs, fetching
+ * individual CVE details, retrieving dashboard statistics, and user login.
+ *
+ * @module controllers/cveController
+ */
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { statements } = require('../database/init.js');
 
+/**
+ * Retrieve all CVEs with optional filtering by severity, software, year, or
+ * free-text search.
+ *
+ * @param {import('express').Request} req - Query params: `severity`, `software`, `year`, `search`.
+ * @param {import('express').Response} res
+ */
 const getAllCVEs = (req, res) => {
   try {
     const filters = {
@@ -66,6 +82,12 @@ const getAllCVEs = (req, res) => {
   }
 };
 
+/**
+ * Retrieve a single CVE by its ID.
+ *
+ * @param {import('express').Request} req - Route param: `id`.
+ * @param {import('express').Response} res
+ */
 const getCVE = (req, res) => {
   try {
     const { id } = req.params;
@@ -106,6 +128,13 @@ const getCVE = (req, res) => {
   }
 };
 
+/**
+ * Return aggregate dashboard statistics including totals by severity, by year,
+ * and recent critical alerts.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 const getStatistics = (req, res) => {
   try {
     // Get total count
@@ -160,6 +189,12 @@ const getStatistics = (req, res) => {
   }
 };
 
+/**
+ * Authenticate a user and return a JWT.
+ *
+ * @param {import('express').Request} req - Must contain `username` and `password` in the body.
+ * @param {import('express').Response} res
+ */
 const login = (req, res) => {
   const { username, password } = req.body;
 

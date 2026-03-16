@@ -1,3 +1,12 @@
+/**
+ * Root application component.
+ *
+ * Sets up React Router, context providers (Theme, Auth, Notification), the
+ * navigation bar, footer, and all public / protected / admin routes.
+ *
+ * @module App
+ */
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { NavBar, Footer, LoadingSkeleton } from './components/common';
@@ -29,12 +38,19 @@ import { DataSyncPage } from './pages/admin/DataSyncPage';
 import { LearnCenterManagePage } from './pages/admin/LearnCenterManagePage';
 import './index.css';
 
+/** Full-page loading spinner shown while auth state is being resolved. */
 const FullPageLoader = () => (
   <div className="min-h-screen bg-page flex items-center justify-center">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-main"></div>
   </div>
 );
 
+/**
+ * Wrapper that redirects unauthenticated users to `/login`.
+ * When `adminOnly` is true, non-admin users are redirected to `/dashboard`.
+ *
+ * @param {{ children: React.ReactNode, adminOnly?: boolean }} props
+ */
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
@@ -53,6 +69,12 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   return children;
 };
 
+/**
+ * Wrapper that redirects already-authenticated users away from auth pages
+ * (login / register) to the dashboard.
+ *
+ * @param {{ children: React.ReactNode }} props
+ */
 const AuthRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -67,6 +89,10 @@ const AuthRoute = ({ children }) => {
   return children;
 };
 
+/**
+ * Inner application shell that renders the NavBar, route definitions, and
+ * Footer.  Must be rendered inside a Router and all context providers.
+ */
 // Main App Component
 const AppContent = () => {
   return (
@@ -108,6 +134,10 @@ const AppContent = () => {
   );
 };
 
+/**
+ * Top-level component that composes the ThemeProvider, Router, and
+ * NotificationProvider around the application content.
+ */
 // Main App with Router
 function App() {
   return (

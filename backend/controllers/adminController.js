@@ -1,6 +1,21 @@
+/**
+ * Admin controller.
+ *
+ * Provides route handlers for admin-only operations such as user management,
+ * activity logs, application settings, and the admin dashboard.
+ *
+ * @module controllers/adminController
+ */
+
 const bcrypt = require('bcryptjs');
 const { statements } = require('../database/init');
 
+/**
+ * List all registered users (admin only).
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 // Get all users (admin only)
 const getAllUsers = (req, res) => {
   try {
@@ -33,6 +48,12 @@ const getAllUsers = (req, res) => {
   }
 };
 
+/**
+ * Retrieve a single user by their ID.
+ *
+ * @param {import('express').Request} req - Route param: `userId`.
+ * @param {import('express').Response} res
+ */
 // Get user by ID
 const getUserById = (req, res) => {
   try {
@@ -69,6 +90,12 @@ const getUserById = (req, res) => {
   }
 };
 
+/**
+ * Update a user's profile, role, and active status.
+ *
+ * @param {import('express').Request} req - Route param: `userId`. Body: `firstName`, `lastName`, `company`, `role`, `isActive`.
+ * @param {import('express').Response} res
+ */
 // Update user role and status
 const updateUser = (req, res) => {
   try {
@@ -122,6 +149,12 @@ const updateUser = (req, res) => {
   }
 };
 
+/**
+ * Deactivate a user account (cannot deactivate yourself).
+ *
+ * @param {import('express').Request} req - Route param: `userId`.
+ * @param {import('express').Response} res
+ */
 // Deactivate user
 const deactivateUser = (req, res) => {
   try {
@@ -167,6 +200,12 @@ const deactivateUser = (req, res) => {
   }
 };
 
+/**
+ * Re-activate a previously deactivated user account.
+ *
+ * @param {import('express').Request} req - Route param: `userId`.
+ * @param {import('express').Response} res
+ */
 // Activate user
 const activateUser = (req, res) => {
   try {
@@ -204,6 +243,12 @@ const activateUser = (req, res) => {
   }
 };
 
+/**
+ * Retrieve paginated activity logs, optionally filtered by user ID.
+ *
+ * @param {import('express').Request} req - Query params: `userId`, `limit`, `offset`.
+ * @param {import('express').Response} res
+ */
 // Get activity logs
 const getActivityLogs = (req, res) => {
   try {
@@ -235,6 +280,12 @@ const getActivityLogs = (req, res) => {
   }
 };
 
+/**
+ * Retrieve all application settings as a key-value object.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 // Get admin settings
 const getSettings = (req, res) => {
   try {
@@ -258,6 +309,12 @@ const getSettings = (req, res) => {
   }
 };
 
+/**
+ * Update a single application setting by key.
+ *
+ * @param {import('express').Request} req - Body: `settingKey`, `settingValue`.
+ * @param {import('express').Response} res
+ */
 // Update admin setting
 const updateSetting = (req, res) => {
   try {
@@ -298,6 +355,12 @@ const updateSetting = (req, res) => {
   }
 };
 
+/**
+ * Retrieve high-level dashboard statistics for the admin panel.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
 // Get dashboard stats
 const getDashboardStats = (req, res) => {
   try {
