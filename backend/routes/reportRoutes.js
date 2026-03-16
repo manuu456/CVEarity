@@ -24,15 +24,22 @@ router.get('/csv', (req, res) => {
     const headers = ['CVE ID', 'Title', 'Severity', 'Score', 'Published Date', 'Affected Software', 'Description'];
     const csvRows = [headers.join(',')];
 
+    // Sanitize cell value to prevent CSV formula injection
+    const sanitizeCSV = (val) => {
+      let s = String(val || '');
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+      return '"' + s.replace(/"/g, '""') + '"';
+    };
+
     cves.forEach(cve => {
       csvRows.push([
-        cve.cve_id,
-        `"${(cve.title || '').replace(/"/g, '""')}"`,
-        cve.severity,
+        sanitizeCSV(cve.cve_id),
+        sanitizeCSV(cve.title),
+        sanitizeCSV(cve.severity),
         cve.severity_score,
-        cve.published_date,
-        `"${(cve.affected_software || '').replace(/"/g, '""')}"`,
-        `"${(cve.description || '').substring(0, 200).replace(/"/g, '""')}"`
+        sanitizeCSV(cve.published_date),
+        sanitizeCSV(cve.affected_software),
+        sanitizeCSV((cve.description || '').substring(0, 200))
       ].join(','));
     });
 

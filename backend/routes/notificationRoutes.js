@@ -6,9 +6,14 @@
 const express = require('express');
 const router = express.Router();
 const emailService = require('../services/emailService');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // Reuse initialized DB from database/init.js
-const { db } = require('../database/init.js');
+const { db: getDb, mapResultToObjects } = require('../database/init.js');
+
+// All notification routes require admin authentication
+router.use(authenticate);
+router.use(requireAdmin);
 
 /**
  * POST /api/notifications/test
@@ -51,9 +56,10 @@ router.post('/critical-alert', async (req, res) => {
     }
 
     // Fetch CVE data from database
-    const cve = db.prepare(`
-      SELECT * FROM cves WHERE cve_id = ?
-    `).get(cveId);
+    const db = getDb();
+    const cveResult = db.exec('SELECT * FROM cves WHERE cve_id = ?', [cveId]);
+    const cveRows = mapResultToObjects(cveResult);
+    const cve = cveRows.length > 0 ? cveRows[0] : null;
 
     if (!cve) {
       return res.status(404).json({
@@ -111,11 +117,9 @@ router.post('/new-cves', async (req, res) => {
     }
 
     // Get recent CVEs
-    const recentCVEs = db.prepare(`
-      SELECT * FROM cves 
-      ORDER BY published_date DESC 
-      LIMIT ?
-    `).all(topCount);
+    const db = getDb();
+    const recentResult = db.exec('SELECT * FROM cves ORDER BY published_date DESC LIMIT ?', [topCount]);
+    const recentCVEs = mapResultToObjects(recentResult);
 
     // Transform CVE data
     const topCVEs = recentCVEs.map(cve => ({
@@ -127,9 +131,11 @@ router.post('/new-cves', async (req, res) => {
     }));
 
     // Send email
+    const countResult = db.exec('SELECT COUNT(*) as count FROM cves');
+    const totalCount = mapResultToObjects(countResult)[0]?.count || 0;
     const result = await emailService.sendNewCVENotification(
       recipientEmail,
-      db.prepare('SELECT COUNT(*) as count FROM cves').get().count,
+      totalCount,
       topCVEs
     );
 
@@ -168,14 +174,16 @@ router.post('/weekly-report', async (req, res) => {
     }
 
     // Get statistics
-    const stats = db.prepare(`
+    const db = getDb();
+    const statsResult = db.exec(`
       SELECT 
         COUNT(*) as totalCVEs,
         SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as criticalCount,
         SUM(CASE WHEN severity = 'high' THEN 1 ELSE 0 END) as highCount,
         SUM(CASE WHEN published_date >= datetime('now', '-7 days') THEN 1 ELSE 0 END) as newThisWeek
       FROM cves
-    `).get();
+    `);
+    const stats = mapResultToObjects(statsResult)[0] || { totalCVEs: 0, criticalCount: 0, highCount: 0, newThisWeek: 0 };
 
     // Send email
     const result = await emailService.sendWeeklyReport(
@@ -218,7 +226,8 @@ router.post('/weekly-report', async (req, res) => {
  */
 router.get('/stats', (req, res) => {
   try {
-    const stats = db.prepare(`
+    const db = getDb();
+    const notifStatsResult = db.exec(`
       SELECT 
         COUNT(*) as totalCVEs,
         SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as critical,
@@ -226,7 +235,8 @@ router.get('/stats', (req, res) => {
         SUM(CASE WHEN severity = 'medium' THEN 1 ELSE 0 END) as medium,
         SUM(CASE WHEN severity = 'low' THEN 1 ELSE 0 END) as low
       FROM cves
-    `).get();
+    `);
+    const stats = mapResultToObjects(notifStatsResult)[0] || { totalCVEs: 0, critical: 0, high: 0, medium: 0, low: 0 };
 
     res.json({
       success: true,

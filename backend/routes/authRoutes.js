@@ -355,6 +355,7 @@ router.post('/mfa/verify', authenticate, (req, res) => {
     }
 
     const { db: getDb, saveDatabase, mapResultToObjects } = require('../database/init');
+    const crypto = require('crypto');
     const db = getDb();
     const result = db.exec('SELECT mfa_secret FROM users WHERE id = ?', [req.user.id]);
     const users = mapResultToObjects(result);
@@ -363,8 +364,38 @@ router.post('/mfa/verify', authenticate, (req, res) => {
       return res.status(400).json({ success: false, message: 'MFA not set up. Call /mfa/setup first.' });
     }
 
-    // Simple verification — accept any 6-digit code for now (production would use otplib)
-    // For demo purposes, we enable MFA when the user provides any valid-format code
+    // RFC 6238 TOTP verification (30-second window, SHA-1, 6 digits)
+    const secret = users[0].mfa_secret;
+    const timeStep = 30;
+    const now = Math.floor(Date.now() / 1000);
+
+    const generateTOTP = (secretHex, counter) => {
+      const buf = Buffer.alloc(8);
+      buf.writeUInt32BE(0, 0);
+      buf.writeUInt32BE(counter, 4);
+      const hmac = crypto.createHmac('sha1', Buffer.from(secretHex, 'hex'));
+      hmac.update(buf);
+      const digest = hmac.digest();
+      const offset = digest[digest.length - 1] & 0x0f;
+      const otp = ((digest[offset] & 0x7f) << 24 |
+                    (digest[offset + 1] & 0xff) << 16 |
+                    (digest[offset + 2] & 0xff) << 8 |
+                    (digest[offset + 3] & 0xff)) % 1000000;
+      return otp.toString().padStart(6, '0');
+    };
+
+    // Check current window and +/- 1 step for clock drift
+    const counter = Math.floor(now / timeStep);
+    const validCodes = [
+      generateTOTP(secret, counter - 1),
+      generateTOTP(secret, counter),
+      generateTOTP(secret, counter + 1)
+    ];
+
+    if (!validCodes.includes(code)) {
+      return res.status(400).json({ success: false, message: 'Invalid MFA code. Please try again.' });
+    }
+
     db.run('UPDATE users SET mfa_enabled = 1 WHERE id = ?', [req.user.id]);
     saveDatabase();
 

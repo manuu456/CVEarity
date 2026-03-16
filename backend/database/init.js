@@ -264,6 +264,17 @@ const createTables = () => {
   try { db.run('ALTER TABLE cves ADD COLUMN is_kev BOOLEAN DEFAULT 0'); } catch(e) {}
   try { db.run('ALTER TABLE cves ADD COLUMN kev_due_date TEXT'); } catch(e) {}
 
+  // Performance indexes
+  try { db.run('CREATE INDEX IF NOT EXISTS idx_cves_cve_id ON cves (cve_id)'); } catch(e) {}
+  try { db.run('CREATE INDEX IF NOT EXISTS idx_cves_severity ON cves (severity)'); } catch(e) {}
+  try { db.run('CREATE INDEX IF NOT EXISTS idx_cves_published_date ON cves (published_date)'); } catch(e) {}
+  try { db.run('CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)'); } catch(e) {}
+  try { db.run('CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)'); } catch(e) {}
+  try { db.run('CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON activity_logs (user_id)'); } catch(e) {}
+  try { db.run('CREATE INDEX IF NOT EXISTS idx_watchlist_user_id ON watchlist (user_id)'); } catch(e) {}
+  try { db.run('CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON alerts (user_id)'); } catch(e) {}
+  try { db.run('CREATE INDEX IF NOT EXISTS idx_user_assets_user_id ON user_assets (user_id)'); } catch(e) {}
+
   // Insert default admin user if not exists
   try {
     const adminResult = db.exec('SELECT id FROM users WHERE role = "admin"');

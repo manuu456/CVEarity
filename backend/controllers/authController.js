@@ -8,7 +8,7 @@ const login = (req, res) => {
   try {
     const user = statements.getUserByUsername.get(username);
 
-    if (!user || user.role !== 'user') {
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid username or password' });
     }
 

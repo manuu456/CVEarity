@@ -296,10 +296,16 @@ router.delete('/activity', (_req, res) => {
 // Get system statistics
 router.get('/stats', (req, res) => {
   try {
-    const totalUsers = db().prepare('SELECT COUNT(*) as count FROM users').get().count;
-    const activeUsers = db().prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1').get().count;
-    const adminUsers = db().prepare('SELECT COUNT(*) as count FROM users WHERE role = "admin"').get().count;
-    const recentActivity = db().prepare('SELECT COUNT(*) as count FROM activity_logs WHERE created_at >= datetime("now", "-24 hours")').get().count;
+    const { mapResultToObjects } = require('../database/init');
+    const database = db();
+    const totalResult = database.exec('SELECT COUNT(*) as count FROM users');
+    const totalUsers = mapResultToObjects(totalResult)[0]?.count || 0;
+    const activeResult = database.exec('SELECT COUNT(*) as count FROM users WHERE is_active = 1');
+    const activeUsers = mapResultToObjects(activeResult)[0]?.count || 0;
+    const adminResult = database.exec('SELECT COUNT(*) as count FROM users WHERE role = "admin"');
+    const adminUsers = mapResultToObjects(adminResult)[0]?.count || 0;
+    const activityResult = database.exec('SELECT COUNT(*) as count FROM activity_logs WHERE created_at >= datetime("now", "-24 hours")');
+    const recentActivity = mapResultToObjects(activityResult)[0]?.count || 0;
 
     res.json({
       success: true,

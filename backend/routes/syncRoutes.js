@@ -6,6 +6,11 @@
 const express = require('express');
 const router = express.Router();
 const cveSync = require('../controllers/cveSync');
+const { authenticate, requireAdmin } = require('../middleware/auth');
+
+// All sync routes require admin authentication
+router.use(authenticate);
+router.use(requireAdmin);
 
 /**
  * POST /api/sync/cves
